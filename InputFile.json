@@ -1,0 +1,17 @@
+{
+	"HorizontalElementsQuantity": 6,
+	"VerticalElementsQuantity": 6,
+	"Height": 0.5,
+	"Width": 0.5,
+	"HeatExchangingFactor1": 100.0,
+	"HeatExchangingFactor2": 100.0,
+	"HeatExchangingFactor3": 100.0,
+	"HeatExchangingFactor4": 100.0,
+	"ConductingFactorX": 78.0,
+	"ConductingFactorY": 78.0,
+	"HeatSourcePower": 0.0,
+	"TemperatureBottom": 20.0,
+	"TemperatureTop": 500.0,
+	"TemperatureLeft": 500.0,
+	"TemperatureRight": 500.0
+}

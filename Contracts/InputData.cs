@@ -26,6 +26,7 @@ namespace DTEngine.Contracts
 
 
         public decimal HeatSourcePower { get; set; }  //moc_zrodel
+        public decimal HeatStream { get; set; }  //strumien ciepla
 
         public decimal TemperatureBottom { get; set; }    //t_czynnika1;
         public decimal TemperatureTop { get; set; }    //t_czynnika2;

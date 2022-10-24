@@ -10,6 +10,7 @@
 	"ConductingFactorX": 42.0,
 	"ConductingFactorY": 42.0,
 	"HeatSourcePower": 10000000.0,
+	"HeatStream": 200000.0,
 	"TemperatureBottom": 20.0,
 	"TemperatureTop": 500.0,
 	"TemperatureLeft": 500.0,

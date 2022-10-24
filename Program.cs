@@ -241,14 +241,194 @@ for (int i = 1; i < 10; i++)
 Console.WriteLine("\nMain Global K matrix:");
 PrintMatrix(KSum, 10);
 
+var fQ = new decimal[251, 2];
+var fQElement = new decimal[5, 2];
+decimal fQValue;
+
+for (int element = 1; element <= ne; element++)
+{
+    var xe = new decimal[5];
+    var ye = new decimal[5];
+
+    for (int j = 1; j <= 4; j++)
+    {
+        xe[j] = x[ie[element, j]];
+        ye[j] = y[ie[element, j]];
+    }
+
+    fQValue = ((input.HeatSourcePower) * ((xe[2] - xe[1]) * (ye[4] - ye[1]))) / 4.0m;
+    fQElement[1, 1] = fQValue * 1m; fQElement[2, 1] = fQValue * 1m;
+    fQElement[3, 1] = fQValue * 1m; fQElement[4, 1] = fQValue * 1m;
+    for (int i = 1; i <= 4; i++)
+    {
+        var ii = ie[element, i];
+        if (ii > 0)
+            fQ[ii, 1] = fQ[ii, 1] + fQElement[i, 1];
+    }
+}
+
+Console.WriteLine("\nfQ vector:");
+PrintVector(fQ, 9);
+
+
+//falfa
+
+decimal falfaValue;
+var falfa_e = new decimal[5, 2];
+var falfa = new decimal[251, 2];
+
+for (int u = 1; u <= ne; u++)
+{
+    var xe = new decimal[5];
+    var ye = new decimal[5];
+
+    for (int j = 1; j <= 4; j++)
+    {
+        xe[j] = x[ie[u, j]];
+        ye[j] = y[ie[u, j]];
+    }
+
+    if (false)   //boundary conditions right
+    {
+        falfaValue = ((input.HeatExchangingFactor2 * input.TemperatureRight) * (ye[4] - ye[1])) / 2;
+        falfa_e[1, 1] = 0;
+        falfa_e[2, 1] = falfaValue * 1;
+        falfa_e[3, 1] = falfaValue * 1;
+        falfa_e[4, 1] = 0;
+    }
+    if (false)       //boundary conditions left     
+    {
+        falfaValue = ((input.HeatExchangingFactor4 * input.TemperatureLeft) * (y[4] - ye[1])) / 2;
+        falfa_e[1, 1] = falfaValue * 1;
+        falfa_e[2, 1] = 0;
+        falfa_e[3, 1] = 0;
+        falfa_e[4, 1] = falfaValue * 1;
+    }
+    if (u == 1 || u == 2)       //boundary conditions bottom       
+    {
+        falfaValue = ((input.HeatExchangingFactor1 * input.TemperatureBottom) * (x[2] - x[1])) / 2;
+        falfa_e[1, 1] = falfaValue * 1;
+        falfa_e[2, 1] = falfaValue * 1;
+        falfa_e[3, 1] = 0;
+        falfa_e[4, 1] = 0;
+    }
+    if (false)       //boundary conditions top        
+    {
+        falfaValue = ((input.HeatExchangingFactor3 * input.TemperatureTop) * (x[2] - x[1])) / 2;
+        falfa_e[1, 1] = 0;
+        falfa_e[2, 1] = 0;
+        falfa_e[3, 1] = falfaValue * 1;
+        falfa_e[4, 1] = falfaValue * 1;
+    }
+    if (u == 3 || u == 4)       //other elements
+    {
+        falfa_e[1, 1] = 0; falfa_e[2, 1] = 0;
+        falfa_e[3, 1] = 0; falfa_e[4, 1] = 0;
+    }
+    for (int i = 1; i <= 4; i++)          //falfa building
+    {
+        var ii = ie[u, i];
+        if (ii > 0)
+            falfa[ii, 1] = falfa[ii, 1] + falfa_e[i, 1];
+    }
+}
+
+Console.WriteLine("\nFAlfa vector:");
+PrintVector(falfa, 9);
+
+
+//fq
+decimal fq_value;
+var fq_e = new decimal[5, 2];
+var fq = new decimal[251, 2];
+
+for (int u = 1; u <= ne; u++)
+{
+    var xe = new decimal[5];
+    var ye = new decimal[5];
+
+    for (int j = 1; j <= 4; j++)
+    {
+        xe[j] = x[ie[u, j]];
+        ye[j] = y[ie[u, j]];
+    }
+
+    if (false)   //boundary conditions right
+    {
+        fq_value = (input.HeatStream * (ye[4] - ye[1])) / 2;
+        fq_e[1, 1] = 0;
+        fq_e[2, 1] = fq_value * 1;
+        fq_e[3, 1] = fq_value * 1;
+        fq_e[4, 1] = 0;
+    }
+    if (u == 1 || u == 3)       //boundary conditions left     
+    {
+        fq_value = (input.HeatStream * (ye[4] - ye[1])) / 2;
+        fq_e[1, 1] = fq_value * 1;
+        fq_e[2, 1] = 0;
+        fq_e[3, 1] = 0;
+        fq_e[4, 1] = fq_value * 1;
+    }
+    if (false)       //boundary conditions bottom       
+    {
+        fq_value = (input.HeatStream * (x[2] - x[1])) / 2;
+        fq_e[1, 1] = fq_value * 1;
+        fq_e[2, 1] = fq_value * 1;
+        fq_e[3, 1] = 0;
+        fq_e[4, 1] = 0;
+    }
+    if (false)       //boundary conditions top        
+    {
+        fq_value = (input.HeatStream * (x[2] - x[1])) / 2;
+        fq_e[1, 1] = 0;
+        fq_e[2, 1] = 0;
+        fq_e[3, 1] = fq_value * 1;
+        fq_e[4, 1] = fq_value * 1;
+    }
+    if (u == 2 || u == 4)       //other elements
+    {
+        fq_e[1, 1] = 0; fq_e[2, 1] = 0;
+        fq_e[3, 1] = 0; fq_e[4, 1] = 0;
+    }
+    for (int i = 1; i <= 4; i++)          //falfa building
+    {
+        var ii = ie[u, i];
+        if (ii > 0)
+            fq[ii, 1] = fq[ii, 1] + fq_e[i, 1];
+    }
+}
+
+Console.WriteLine("\nfq vector:");
+PrintVector(fq, 9);
+
+// f vector
+var f = new decimal[251, 2];
+for (int i = 1; i < 10; i++)
+{
+    f[i, 1] = fq[i,1] + fQ[i,1] + falfa[i,1];
+}
+
+
+Console.WriteLine("\nf vector:");
+PrintVector(f, 9);
+
+
 static void PrintMatrix<T>(T[,] matrix, int size)
 {
     for (int i = 1; i < size; i++)
     {
         for (int j = 1; j < size; j++)
         {
-            Console.Write($"\t{matrix[i,j]} ");
+            Console.Write($"\t{matrix[i, j]} ");
         }
         Console.WriteLine();
+    }
+}
+
+static void PrintVector<T>(T[,] matrix, int size)
+{
+    for (int j = 1; j <= size; j++)
+    {
+        Console.Write($"\t{matrix[j, 1]} \n");
     }
 }

@@ -1,4 +1,8 @@
-﻿using DTEngine.Helpers;
+﻿#define VERBOSE
+
+using DTEngine.Entities;
+using DTEngine.Helpers;
+
 
 string InputFileLocation = "C:\\Repos\\DTEngine\\InputFile.json";
 string OutputFileLocation = "C:\\Repos\\DTEngine\\OutputFile.json";
@@ -13,9 +17,11 @@ decimal dh = input.Width / (input.VerticalElementsQuantity - 1);
 decimal nw = input.HorizontalElementsQuantity * input.VerticalElementsQuantity;
 decimal ne = (input.HorizontalElementsQuantity - 1) * (input.VerticalElementsQuantity - 1);
 
+#if VERBOSE
 Console.WriteLine("Grid params:");
 Console.WriteLine($"Number of elements: {ne}");
 Console.WriteLine($"Number of nodes: {nw}");
+#endif
 
 //Grid coordinates
 //Possible real phisical coordinates
@@ -89,57 +95,18 @@ for (int verticalPosition=1,horizontalPosition=1,elementNumber=1;
     }
 }
 
-var KLocal = new int[5,5];
-var lambda = (int)input.ConductingFactorX/6;
 
-#region LOCAL_K_MATRIX
-
-KLocal[1,1] = lambda * 4;
-KLocal[1,2] = lambda * -1;
-KLocal[1,3] = lambda * -2;
-KLocal[1,4] = lambda * -1;
-
-KLocal[2, 1] = lambda * -1;
-KLocal[2, 2] = lambda * 4;
-KLocal[2, 3] = lambda * -1;
-KLocal[2, 4] = lambda * -2;
-
-KLocal[3, 1] = lambda * -2;
-KLocal[3, 2] = lambda * -1;
-KLocal[3, 3] = lambda * 4;
-KLocal[3, 4] = lambda * -1;
-
-KLocal[4, 1] = lambda * -1;
-KLocal[4, 2] = lambda * -2;
-KLocal[4, 3] = lambda * -1;
-KLocal[4, 4] = lambda * 4;
-
-#endregion LOCAL_K_MATRIX
-
-//building global K matrix
-var KGlobal = new int[10,10];
-for (int element = 1; element <= ne; element++)
-{
-    for (int firstNodeLocal = 1; firstNodeLocal <= 4; firstNodeLocal++)
-    {
-        var firstNodeGlobal = ie[element, firstNodeLocal];
-        for (int secondNodeLocal = 1; secondNodeLocal <= 4; secondNodeLocal++)
-        {
-            var secondNodeGlobal = ie[element, secondNodeLocal];
-                
-            if (secondNodeGlobal > 0)
-                KGlobal[firstNodeGlobal, secondNodeGlobal] = KGlobal[firstNodeGlobal, secondNodeGlobal] + KLocal[firstNodeLocal,secondNodeLocal];
-        }
-    }
-}
+var stiffnessMatrix = new StiffnessMatrix(input.ConductingFactorX,ie,ne);
 
 
+#if VERBOSE
 Console.WriteLine("\nLocal stiffness matrix");
-PrintMatrix(KLocal, 5);
-
+PrintMatrix(stiffnessMatrix.LocalStiffnessMatrix, 5);
 
 Console.WriteLine("\nGlobal stiffness matrix");
-PrintMatrix(KGlobal, 10);
+PrintMatrix(stiffnessMatrix.GlobalStiffnessMatrix, 10);
+#endif
+
 
 #region ALFA_MATRIXES
 
@@ -148,32 +115,44 @@ alfa12[1, 1] =  2;
 alfa12[1, 2] =  1;
 alfa12[2, 2] = 2;
 alfa12[2, 1] = 1;
+
+#if VERBOSE
 Console.WriteLine("\nAlfa 12");
 PrintMatrix(alfa12, 5);
+#endif
 
 var alfa23 = new decimal[5, 5];
 alfa23[2, 2] = 2;
 alfa23[2, 3] = 1;
 alfa23[3, 2] = 1;
 alfa23[3, 3] = 2;
+
+#if VERBOSE
 Console.WriteLine("\nAlfa 23");
 PrintMatrix(alfa23, 5);
+#endif
 
 var alfa34 = new decimal[5, 5];
 alfa34[3, 3] = 2;
 alfa34[3, 4] = 1;
 alfa34[4, 3] = 1;
 alfa34[4, 4] = 2;
+
+#if VERBOSE
 Console.WriteLine("\nAlfa 34");
 PrintMatrix(alfa34, 5);
+#endif
 
 var alfa41 = new decimal[5, 5];
 alfa41[1, 1] = 2;
 alfa41[1, 4] = 1;
 alfa41[4, 1] = 1;
 alfa41[4, 4] = 2;
+
+#if VERBOSE
 Console.WriteLine("\nAlfa 41");
 PrintMatrix(alfa41, 5);
+#endif
 
 #endregion ALFA_MATRIXES
 
@@ -226,20 +205,25 @@ for (int u = 1; u <= ne; u++)
     }
 }
 
+#if VERBOSE
 Console.WriteLine("\nAlpha matrix:");
 PrintMatrix(globalAlpha, 10);
+#endif
+
 
 var KSum = new decimal[10, 10];
 for (int i = 1; i < 10; i++)
 {
     for (int j = 1; j < 10; j++)
     {
-        KSum[i, j] = KGlobal[i, j] + globalAlpha[i, j];
+        KSum[i, j] = stiffnessMatrix.GlobalStiffnessMatrix[i, j] + globalAlpha[i, j];
     }
 }
 
+#if VERBOSE
 Console.WriteLine("\nMain Global K matrix:");
 PrintMatrix(KSum, 10);
+#endif
 
 var fQ = new decimal[251, 2];
 var fQElement = new decimal[5, 2];
@@ -267,9 +251,10 @@ for (int element = 1; element <= ne; element++)
     }
 }
 
+#if VERBOSE
 Console.WriteLine("\nfQ vector:");
 PrintVector(fQ, 9);
-
+#endif
 
 //falfa
 
@@ -333,9 +318,10 @@ for (int u = 1; u <= ne; u++)
     }
 }
 
+#if VERBOSE
 Console.WriteLine("\nFAlfa vector:");
 PrintVector(falfa, 9);
-
+#endif
 
 //fq
 decimal fq_value;
@@ -398,8 +384,11 @@ for (int u = 1; u <= ne; u++)
     }
 }
 
+#if VERBOSE
 Console.WriteLine("\nfq vector:");
 PrintVector(fq, 9);
+#endif
+
 
 // f vector
 var f = new decimal[251, 2];
@@ -408,10 +397,10 @@ for (int i = 1; i < 10; i++)
     f[i, 1] = fq[i,1] + fQ[i,1] + falfa[i,1];
 }
 
-
+#if VERBOSE
 Console.WriteLine("\nf vector:");
 PrintVector(f, 9);
-
+#endif
 
 static void PrintMatrix<T>(T[,] matrix, int size)
 {

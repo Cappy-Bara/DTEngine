@@ -1,8 +1,9 @@
 ﻿#define VERBOSE
 
 using DTEngine.Entities;
+using DTEngine.Entities.Gauss;
 using DTEngine.Helpers;
-
+using DTEngine.Utilities;
 
 string InputFileLocation = "C:\\Repos\\DTEngine\\InputFile.json";
 string OutputFileLocation = "C:\\Repos\\DTEngine\\OutputFile.json";
@@ -14,7 +15,7 @@ decimal dy = 0;
 
 decimal dv = input.Height / (input.HorizontalElementsQuantity - 1);
 decimal dh = input.Width / (input.VerticalElementsQuantity - 1);
-decimal nw = input.HorizontalElementsQuantity * input.VerticalElementsQuantity;
+int nw = input.HorizontalElementsQuantity * input.VerticalElementsQuantity;
 decimal ne = (input.HorizontalElementsQuantity - 1) * (input.VerticalElementsQuantity - 1);
 
 #if VERBOSE
@@ -402,11 +403,41 @@ Console.WriteLine("\nf vector:");
 PrintVector(f, 9);
 #endif
 
+var initialValues = new Dictionary<int, decimal> { {3, 100m}, { 6, 100m }, { 9, 100m } };
+var a = new AMatrix(initialValues, KSum, f, nw);
+
+#if VERBOSE
+Console.WriteLine("\nA Matrix:");
+PrintMatrixNew(a, 9, 0);
+#endif
+
+var gaussResult = GaussSolver.Solve(nw,a);
+
+#if VERBOSE
+Console.WriteLine("\n GAUSS RESULTS:");
+for (int i = 0; i < nw; i++)
+{
+    Console.WriteLine($"X[{i + 1}] = {gaussResult[i]}");
+}
+#endif
+
 static void PrintMatrix<T>(T[,] matrix, int size)
 {
     for (int i = 1; i < size; i++)
     {
         for (int j = 1; j < size; j++)
+        {
+            Console.Write($"\t{matrix[i, j]} ");
+        }
+        Console.WriteLine();
+    }
+}
+
+static void PrintMatrixNew<T>(IMatrix<T> matrix, int size, int fromIndex = 1)
+{
+    for (int i = fromIndex; i < size; i++)
+    {
+        for (int j = fromIndex; j < size+1; j++)
         {
             Console.Write($"\t{matrix[i, j]} ");
         }

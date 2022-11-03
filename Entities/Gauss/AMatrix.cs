@@ -1,0 +1,47 @@
+﻿using DTEngine.Utilities;
+using System;
+
+namespace DTEngine.Entities.Gauss
+{
+    public class AMatrix : IMatrix<decimal>
+    {
+        private decimal[,] a = new decimal[10, 10];
+
+        public AMatrix(Dictionary<int, decimal> initValues, decimal[,] KSum, decimal[,] f, int nw)
+        {
+            for (int row = 0; row < 9; row++)
+            {
+                for (int column = 0; column < 9; column++)
+                {
+                    if (row == column && initValues.TryGetValue(row + 1, out _))
+                    {
+                        a[row, column] = 1;
+                    }
+                    else if (initValues.TryGetValue(row + 1, out _))
+                    {
+                        a[row, column] = 0;
+                    }
+                    else if (initValues.TryGetValue(column + 1, out var initVal))
+                    {
+                        var aVal = KSum[row + 1, column + 1] * initVal;
+                        f[row + 1, 1] -= aVal;
+                        a[row, column] = 0;
+                    }
+                    else
+                    {
+                        a[row, column] = a[row, column] + KSum[row + 1, column + 1];
+                    }
+                }
+
+                var isInitValue = initValues.TryGetValue(row + 1, out var value);
+                a[row, nw] = isInitValue ? value : f[row + 1, 1];
+            }
+        }
+
+        public decimal this[int index, int index2]
+        {
+            get => a[index, index2];
+            set => a[index, index2] = value;
+        }
+    }
+}

@@ -1,17 +1,18 @@
-﻿namespace DTEngine.Entities
+﻿using DTEngine.Entities.ComputingDomain;
+
+namespace DTEngine.Entities
 {
     public class StiffnessMatrix
     {
         public decimal[,] LocalStiffnessMatrix { get; init; } = new decimal[5, 5];
         public decimal[,] GlobalStiffnessMatrix { get => GetGlobalMatrix(); }
 
+        private ComputationalDomainParams domainParams;
+        private NodeMap nodeMap;
+
         private decimal[,]? globalStiffnessMatrix;
-        private decimal numberOfElements;
-        private int[,] connectionMatrix;
 
-
-
-        public StiffnessMatrix(decimal conductingFactor, int[,] connectionMatrix, decimal numberOfElements)
+        public StiffnessMatrix(decimal conductingFactor, ComputationalDomainParams domainParams, NodeMap nodeMap)
         {
             var lambda = conductingFactor / 6m;
 
@@ -35,10 +36,9 @@
             LocalStiffnessMatrix[4, 3] = lambda * -1;
             LocalStiffnessMatrix[4, 4] = lambda * 4;
 
-            this.connectionMatrix = connectionMatrix;
-            this.numberOfElements = numberOfElements;
-
             globalStiffnessMatrix = null;
+            this.domainParams = domainParams;
+            this.nodeMap = nodeMap;
         }
 
         private decimal[,] GetGlobalMatrix()
@@ -48,21 +48,21 @@
             return globalStiffnessMatrix;
         }
 
-        private decimal[,] GenerateGlobalMatrix()
+        public decimal[,] GenerateGlobalMatrix()
         {
-            //building global K matrix
             var KGlobal = new decimal[10, 10];
-            for (int element = 1; element <= numberOfElements; element++)
+            for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
             {
-                for (int firstNodeLocal = 1; firstNodeLocal <= 4; firstNodeLocal++)
+                for (int firstNodeLocalId = 1; firstNodeLocalId <= 4; firstNodeLocalId++)
                 {
-                    var firstNodeGlobal = connectionMatrix[element, firstNodeLocal];
-                    for (int secondNodeLocal = 1; secondNodeLocal <= 4; secondNodeLocal++)
-                    {
-                        var secondNodeGlobal = connectionMatrix[element, secondNodeLocal];
+                    var firstNodeGlobalId = nodeMap.GetNodeByLocalAddress(elementId, firstNodeLocalId).GlobalId;
 
-                        if (secondNodeGlobal > 0)
-                            KGlobal[firstNodeGlobal, secondNodeGlobal] = KGlobal[firstNodeGlobal, secondNodeGlobal] + LocalStiffnessMatrix[firstNodeLocal, secondNodeLocal];
+                    for (int secondNodeLocalId = 1; secondNodeLocalId <= 4; secondNodeLocalId++)
+                    {
+                        var secondNodeGlobalId = nodeMap.GetNodeByLocalAddress(elementId, secondNodeLocalId).GlobalId;
+
+                        if (secondNodeGlobalId > 0)
+                            KGlobal[firstNodeGlobalId, secondNodeGlobalId] = KGlobal[firstNodeGlobalId, secondNodeGlobalId] + LocalStiffnessMatrix[firstNodeLocalId, secondNodeLocalId];
                     }
                 }
             }

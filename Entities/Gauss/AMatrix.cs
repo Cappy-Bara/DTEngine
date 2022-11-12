@@ -1,17 +1,18 @@
-﻿using DTEngine.Utilities;
+﻿using DTEngine.Entities.ComputingDomain;
+using DTEngine.Utilities;
 using System;
 
 namespace DTEngine.Entities.Gauss
 {
     public class AMatrix : IMatrix<decimal>
     {
-        private decimal[,] a = new decimal[10, 10];
+        private decimal[,] a = new decimal[201, 201];
 
-        public AMatrix(Dictionary<int, decimal> initValues, decimal[,] KSum, decimal[,] f, int nw)
+        public AMatrix(Dictionary<int, decimal> initValues, decimal[,] KSum, decimal[,] f, ComputationalDomainParams domainParams)
         {
-            for (int row = 0; row < 9; row++)
+            for (int row = 0; row < domainParams.NumberOfNodes; row++)
             {
-                for (int column = 0; column < 9; column++)
+                for (int column = 0; column < domainParams.NumberOfNodes; column++)
                 {
                     if (row == column && initValues.TryGetValue(row + 1, out _))
                     {
@@ -34,7 +35,7 @@ namespace DTEngine.Entities.Gauss
                 }
 
                 var isInitValue = initValues.TryGetValue(row + 1, out var value);
-                a[row, nw] = isInitValue ? value : f[row + 1, 1];
+                a[row, domainParams.NumberOfNodes] = isInitValue ? value : f[row + 1, 1];
             }
         }
 

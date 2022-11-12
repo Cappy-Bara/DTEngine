@@ -1,0 +1,18 @@
+{
+	"HorizontalNodesQuantity": 21,
+	"VerticalNodesQuantity": 3,
+	"Height": 0.02,
+	"Width": 0.2,
+	"HeatExchangingFactor1": 2000.0,
+	"HeatExchangingFactor2": 20.0,
+	"HeatExchangingFactor3": 0.0,
+	"HeatExchangingFactor4": 0.0,
+	"ConductingFactorX": 42.0,
+	"ConductingFactorY": 42.0,
+	"HeatSourcePower": 10000000.0,
+	"HeatStream": 0.0,
+	"TemperatureBottom": 20.0,
+	"TemperatureTop": 20.0,
+	"TemperatureLeft": 20.0,
+	"TemperatureRight": 20.0
+}

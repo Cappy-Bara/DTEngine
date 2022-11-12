@@ -50,7 +50,7 @@ namespace DTEngine.Entities
 
         public decimal[,] GenerateGlobalMatrix()
         {
-            var KGlobal = new decimal[10, 10];
+            var KGlobal = new decimal[domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes + 1];
             for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
             {
                 for (int firstNodeLocalId = 1; firstNodeLocalId <= 4; firstNodeLocalId++)

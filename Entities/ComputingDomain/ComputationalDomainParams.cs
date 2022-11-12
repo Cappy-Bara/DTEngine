@@ -15,12 +15,12 @@ namespace DTEngine.Entities.ComputingDomain
 
         public ComputationalDomainParams(InputData input)
         {
-            WidthStep = input.Height / (input.HorizontalElementsQuantity - 1);
-            HeightStep = input.Width / (input.VerticalElementsQuantity - 1);
-            NumberOfNodes = input.HorizontalElementsQuantity * input.VerticalElementsQuantity;
-            NumberOfElements = (input.HorizontalElementsQuantity - 1) * (input.VerticalElementsQuantity - 1);
-            HorizontalElementsQuantity = input.HorizontalElementsQuantity;
-            VerticalElementsQuantity = input.VerticalElementsQuantity;
+            WidthStep = input.Height / (input.HorizontalNodesQuantity - 1);
+            HeightStep = input.Width / (input.VerticalNodesQuantity - 1);
+            NumberOfNodes = input.HorizontalNodesQuantity * input.VerticalNodesQuantity;
+            NumberOfElements = (input.HorizontalNodesQuantity - 1) * (input.VerticalNodesQuantity - 1);
+            HorizontalElementsQuantity = input.HorizontalNodesQuantity;
+            VerticalElementsQuantity = input.VerticalNodesQuantity;
         }
     }
 }

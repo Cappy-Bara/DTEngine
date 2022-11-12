@@ -1,12 +1,13 @@
-﻿#define VERBOSE
+﻿//#define VERBOSE
 
 using DTEngine.Entities;
 using DTEngine.Entities.ComputingDomain;
 using DTEngine.Entities.Gauss;
 using DTEngine.Helpers;
 using DTEngine.Utilities;
+using System.Security.Cryptography.X509Certificates;
 
-string InputFileLocation = "C:\\Repos\\DTEngine\\InputFile.json";
+string InputFileLocation = "C:\\Repos\\DTEngine\\InputFileFull.json";
 string OutputFileLocation = "C:\\Repos\\DTEngine\\OutputFile.json";
 
 var input = FileHandler.ReadFromFile(InputFileLocation);
@@ -26,7 +27,7 @@ Console.WriteLine("\nLocal stiffness matrix");
 PrintMatrix(stiffnessMatrix.LocalStiffnessMatrix, 5);
 
 Console.WriteLine("\nGlobal stiffness matrix");
-PrintMatrix(stiffnessMatrix.GlobalStiffnessMatrix, 10);
+PrintMatrix(stiffnessMatrix.GlobalStiffnessMatrix, domainParams.NumberOfNodes+1);
 #endif
 
 #region ALFA_MATRIXES
@@ -77,7 +78,7 @@ PrintMatrix(alfa41, 5);
 
 #endregion ALFA_MATRIXES
 
-var globalAlpha = new decimal[10, 10];
+var globalAlpha = new decimal[domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes + 1];
 
 for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
 {
@@ -100,17 +101,28 @@ for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
         localAlfa = alfa41;
     }
 
-    if (elementId == 1 || elementId == 2)              //boundary conditions, bottom
+    if ((elementId > 2 && elementId <= 18))              //boundary conditions, bottom, long
+    {
+        //heat exchange - local numeration 1-2 side
+        delta = (input.HeatExchangingFactor2 * (element.Node2.PosX - element.Node1.PosX)) / 6;
+        localAlfa = alfa12;
+    }
+    else if ((elementId <= 2 || elementId > 18) && elementId < 20)              //boundary conditions, bottom, short
     {
         //heat exchange - local numeration 1-2 side
         delta = (input.HeatExchangingFactor1 * (element.Node2.PosX - element.Node1.PosX)) / 6;
         localAlfa = alfa12;
     }
-
-    if (false)         //boundary conditions, top             
+    else if ((elementId > 22 && elementId < 39))         //boundary conditions, top long             
     {
         //heat exchange - local numeration 3-4 side
-        delta = (input.HeatExchangingFactor3 * (element.Node2.PosX - element.Node1.PosX)) / 6;
+        delta = (input.HeatExchangingFactor2 * (element.Node2.PosX - element.Node1.PosX)) / 6;
+        localAlfa = alfa34;
+    }
+    else if ((elementId < 22 || elementId >= 39))         //boundary conditions, top short             
+    {
+        //heat exchange - local numeration 3-4 side
+        delta = (input.HeatExchangingFactor1 * (element.Node2.PosX - element.Node1.PosX)) / 6;
         localAlfa = alfa34;
     }
 
@@ -130,14 +142,14 @@ for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
 
 #if VERBOSE
 Console.WriteLine("\nAlpha matrix:");
-PrintMatrix(globalAlpha, 10);
+PrintMatrix(globalAlpha, domainParams.NumberOfNodes + 1);
 #endif
 
 
-var KSum = new decimal[10, 10];
-for (int i = 1; i < 10; i++)
+var KSum = new decimal[domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes + 1];
+for (int i = 1; i < domainParams.NumberOfNodes + 1; i++)
 {
-    for (int j = 1; j < 10; j++)
+    for (int j = 1; j < domainParams.NumberOfNodes + 1; j++)
     {
         KSum[i, j] = stiffnessMatrix.GlobalStiffnessMatrix[i, j] + globalAlpha[i, j];
     }
@@ -145,7 +157,7 @@ for (int i = 1; i < 10; i++)
 
 #if VERBOSE
 Console.WriteLine("\nMain Global K matrix:");
-PrintMatrix(KSum, 10);
+PrintMatrix(KSum, domainParams.NumberOfNodes + 1);
 #endif
 
 var fQ = new decimal[251, 2];
@@ -213,7 +225,7 @@ for (int element = 1; element <= domainParams.NumberOfElements; element++)
         falfa_e[3, 1] = 0;
         falfa_e[4, 1] = falfaValue * 1;
     }
-    if (element == 1 || element == 2)       //boundary conditions bottom       
+    if (element < 3 || (element > 18 && element < 21))       //boundary conditions bottom       
     {
         falfaValue = ((input.HeatExchangingFactor1 * input.TemperatureBottom) * (xe[2] - xe[1])) / 2;
         falfa_e[1, 1] = falfaValue * 1;
@@ -221,15 +233,31 @@ for (int element = 1; element <= domainParams.NumberOfElements; element++)
         falfa_e[3, 1] = 0;
         falfa_e[4, 1] = 0;
     }
-    if (false)       //boundary conditions top        
+    else if ((element < 23 && element > 20) || element < 39)       //boundary conditions top        
     {
-        falfaValue = ((input.HeatExchangingFactor3 * input.TemperatureTop) * (xe[2] - xe[1])) / 2;
+        falfaValue = ((input.HeatExchangingFactor1 * input.TemperatureTop) * (xe[2] - xe[1])) / 2;
         falfa_e[1, 1] = 0;
         falfa_e[2, 1] = 0;
         falfa_e[3, 1] = falfaValue * 1;
         falfa_e[4, 1] = falfaValue * 1;
     }
-    if (element == 3 || element == 4)       //other elements
+    else if (element > 2 && element < 18)       //boundary conditions bottom       
+    {
+        falfaValue = ((input.HeatExchangingFactor2 * input.TemperatureBottom) * (xe[2] - xe[1])) / 2;
+        falfa_e[1, 1] = falfaValue * 1;
+        falfa_e[2, 1] = falfaValue * 1;
+        falfa_e[3, 1] = 0;
+        falfa_e[4, 1] = 0;
+    }
+    else if (element > 22 && element < 39)       //boundary conditions top        
+    {
+        falfaValue = ((input.HeatExchangingFactor2 * input.TemperatureTop) * (xe[2] - xe[1])) / 2;
+        falfa_e[1, 1] = 0;
+        falfa_e[2, 1] = 0;
+        falfa_e[3, 1] = falfaValue * 1;
+        falfa_e[4, 1] = falfaValue * 1;
+    }
+    if (false)       //other elements
     {
         falfa_e[1, 1] = 0; falfa_e[2, 1] = 0;
         falfa_e[3, 1] = 0; falfa_e[4, 1] = 0;
@@ -310,39 +338,44 @@ for (int element = 1; element <= domainParams.NumberOfElements; element++)      
 
 #if VERBOSE
 Console.WriteLine("\nfq vector:");
-PrintVector(fq, 9);
+PrintVector(fq, domainParams.NumberOfNodes);
 #endif
 
 
 // f vector
 var f = new decimal[251, 2];
-for (int i = 1; i < 10; i++)
+for (int i = 1; i < domainParams.NumberOfNodes + 1; i++)
 {
     f[i, 1] = fq[i,1] + fQ[i,1] + falfa[i,1];
 }
 
 #if VERBOSE
 Console.WriteLine("\nf vector:");
-PrintVector(f, 9);
+PrintVector(f, domainParams.NumberOfNodes);
 #endif
 
-var initialValues = new Dictionary<int, decimal> { {3, 100m}, { 6, 100m }, { 9, 100m } };
-var a = new AMatrix(initialValues, KSum, f, domainParams.NumberOfNodes);
+//var initialValues = new Dictionary<int, decimal> { {3, 100m}, { 6, 100m }, { 9, 100m } };
+var initialValues = new Dictionary<int, decimal> { };
+var a = new AMatrix(initialValues, KSum, f, domainParams);
 
 #if VERBOSE
 Console.WriteLine("\nA Matrix:");
-PrintMatrixWithSizes(a,10, 9,1);
+PrintMatrixWithSizes(a, domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes, 1);
 #endif
 
 var gaussResult = GaussSolver.Solve(domainParams.NumberOfNodes, a);
 
-#if VERBOSE
 Console.WriteLine("\nGAUSS RESULTS:");
-for (int i = 0; i < domainParams.NumberOfNodes; i++)
+for (int i = domainParams.VerticalElementsQuantity-1; i >= 0; i--)
 {
-    Console.WriteLine($"X[{i + 1}] = {gaussResult[i]}");
+    for (int j = i* domainParams.HorizontalElementsQuantity; j < (i+1) * domainParams.HorizontalElementsQuantity; j++)
+    {
+        Console.Write($"{(j + 1):D2}={gaussResult[i]:F4} ");
+    }
+    Console.Write($"\n");
 }
-#endif
+
+
 
 static void PrintMatrix<T>(T[,] matrix, int size)
 {
@@ -379,7 +412,6 @@ static void PrintMatrixWithSizes<T>(IMatrix<T> matrix, int RowSize, int ColumnSi
         Console.WriteLine();
     }
 }
-
 
 static void PrintVector<T>(T[,] matrix, int size)
 {

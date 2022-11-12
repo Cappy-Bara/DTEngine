@@ -1,6 +1,6 @@
 {
-	"HorizontalElementsQuantity": 3,
-	"VerticalElementsQuantity": 3,
+	"HorizontalNodesQuantity": 3,
+	"VerticalNodesQuantity": 3,
 	"Height": 0.02,
 	"Width": 0.02,
 	"HeatExchangingFactor1": 60.0,

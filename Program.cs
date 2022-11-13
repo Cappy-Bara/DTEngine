@@ -1,13 +1,21 @@
 ﻿//#define VERBOSE
+//#define TEST_DATA
+//#define HORIZONTAL_GAUSS
+#define VERTICAL_GAUSS
+//#define SINGLE_GAUSS
 
 using DTEngine.Entities;
 using DTEngine.Entities.ComputingDomain;
 using DTEngine.Entities.Gauss;
 using DTEngine.Helpers;
 using DTEngine.Utilities;
-using System.Security.Cryptography.X509Certificates;
 
 string InputFileLocation = "C:\\Repos\\DTEngine\\InputFileFull.json";
+#if TEST_DATA
+InputFileLocation = "C:\\Repos\\DTEngine\\InputFileTest.json";
+#endif
+
+
 string OutputFileLocation = "C:\\Repos\\DTEngine\\OutputFile.json";
 
 var input = FileHandler.ReadFromFile(InputFileLocation);
@@ -79,6 +87,8 @@ PrintMatrix(alfa41, 5);
 #endregion ALFA_MATRIXES
 
 var globalAlpha = new decimal[domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes + 1];
+var clipsDown = new int[] { 1, 2, 19, 20 };
+var clipsUp = new int[] { 21, 22, 39, 40 };
 
 for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
 {
@@ -101,30 +111,39 @@ for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
         localAlfa = alfa41;
     }
 
-    if ((elementId > 2 && elementId <= 18))              //boundary conditions, bottom, long
-    {
-        //heat exchange - local numeration 1-2 side
-        delta = (input.HeatExchangingFactor2 * (element.Node2.PosX - element.Node1.PosX)) / 6;
-        localAlfa = alfa12;
-    }
-    else if ((elementId <= 2 || elementId > 18) && elementId < 20)              //boundary conditions, bottom, short
+#if TEST_DATA
+    if (elementId == 1 || elementId == 2)              //boundary conditions, bottom TEST
     {
         //heat exchange - local numeration 1-2 side
         delta = (input.HeatExchangingFactor1 * (element.Node2.PosX - element.Node1.PosX)) / 6;
         localAlfa = alfa12;
     }
-    else if ((elementId > 22 && elementId < 39))         //boundary conditions, top long             
+#else
+    if (clipsDown.Contains(elementId))              //boundary conditions, bottom, short
     {
-        //heat exchange - local numeration 3-4 side
-        delta = (input.HeatExchangingFactor2 * (element.Node2.PosX - element.Node1.PosX)) / 6;
-        localAlfa = alfa34;
+        //heat exchange - local numeration 1-2 side
+        delta = (input.HeatExchangingFactor1 * (element.Node2.PosX - element.Node1.PosX)) / 6;
+        localAlfa = alfa12;
     }
-    else if ((elementId < 22 || elementId >= 39))         //boundary conditions, top short             
+    else if (clipsUp.Contains(elementId))         //boundary conditions, top short             
     {
         //heat exchange - local numeration 3-4 side
         delta = (input.HeatExchangingFactor1 * (element.Node2.PosX - element.Node1.PosX)) / 6;
         localAlfa = alfa34;
     }
+    else if (elementId > 22)         //boundary conditions, top long             
+    {
+        //heat exchange - local numeration 3-4 side
+        delta = (input.HeatExchangingFactor2 * (element.Node2.PosX - element.Node1.PosX)) / 6;
+        localAlfa = alfa34;
+    }
+    else              //boundary conditions, bottom, long
+    {
+        //heat exchange - local numeration 1-2 side
+        delta = (input.HeatExchangingFactor2 * (element.Node2.PosX - element.Node1.PosX)) / 6;
+        localAlfa = alfa12;
+    }
+#endif
 
     for (int i = 1; i <= 4; i++)          //building global Kalpha
     {
@@ -144,7 +163,6 @@ for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
 Console.WriteLine("\nAlpha matrix:");
 PrintMatrix(globalAlpha, domainParams.NumberOfNodes + 1);
 #endif
-
 
 var KSum = new decimal[domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes + 1];
 for (int i = 1; i < domainParams.NumberOfNodes + 1; i++)
@@ -193,10 +211,10 @@ PrintVector(fQ, 9);
 #endif
 
 //falfa
-
 decimal falfaValue;
 var falfa_e = new decimal[5, 2];
 var falfa = new decimal[251, 2];
+
 
 for (int element = 1; element <= domainParams.NumberOfElements; element++)
 {
@@ -225,7 +243,9 @@ for (int element = 1; element <= domainParams.NumberOfElements; element++)
         falfa_e[3, 1] = 0;
         falfa_e[4, 1] = falfaValue * 1;
     }
-    if (element < 3 || (element > 18 && element < 21))       //boundary conditions bottom       
+
+#if TEST_DATA
+    if (element == 1 || element == 2)       //boundary conditions bottom       
     {
         falfaValue = ((input.HeatExchangingFactor1 * input.TemperatureBottom) * (xe[2] - xe[1])) / 2;
         falfa_e[1, 1] = falfaValue * 1;
@@ -233,7 +253,21 @@ for (int element = 1; element <= domainParams.NumberOfElements; element++)
         falfa_e[3, 1] = 0;
         falfa_e[4, 1] = 0;
     }
-    else if ((element < 23 && element > 20) || element < 39)       //boundary conditions top        
+    if (element == 3 || element == 4)       //other elements    TU MOŻE PROBLEM? NIE.
+    {
+        falfa_e[1, 1] = 0; falfa_e[2, 1] = 0;
+        falfa_e[3, 1] = 0; falfa_e[4, 1] = 0;
+    }
+#else
+    if (clipsDown.Contains(element))       //boundary conditions bottom       
+    {
+        falfaValue = ((input.HeatExchangingFactor1 * input.TemperatureBottom) * (xe[2] - xe[1])) / 2;
+        falfa_e[1, 1] = falfaValue * 1;
+        falfa_e[2, 1] = falfaValue * 1;
+        falfa_e[3, 1] = 0;
+        falfa_e[4, 1] = 0;
+    }
+    else if (clipsUp.Contains(element))       //boundary conditions top        
     {
         falfaValue = ((input.HeatExchangingFactor1 * input.TemperatureTop) * (xe[2] - xe[1])) / 2;
         falfa_e[1, 1] = 0;
@@ -241,15 +275,7 @@ for (int element = 1; element <= domainParams.NumberOfElements; element++)
         falfa_e[3, 1] = falfaValue * 1;
         falfa_e[4, 1] = falfaValue * 1;
     }
-    else if (element > 2 && element < 18)       //boundary conditions bottom       
-    {
-        falfaValue = ((input.HeatExchangingFactor2 * input.TemperatureBottom) * (xe[2] - xe[1])) / 2;
-        falfa_e[1, 1] = falfaValue * 1;
-        falfa_e[2, 1] = falfaValue * 1;
-        falfa_e[3, 1] = 0;
-        falfa_e[4, 1] = 0;
-    }
-    else if (element > 22 && element < 39)       //boundary conditions top        
+    else if (element > 22)       //boundary conditions top        
     {
         falfaValue = ((input.HeatExchangingFactor2 * input.TemperatureTop) * (xe[2] - xe[1])) / 2;
         falfa_e[1, 1] = 0;
@@ -257,11 +283,16 @@ for (int element = 1; element <= domainParams.NumberOfElements; element++)
         falfa_e[3, 1] = falfaValue * 1;
         falfa_e[4, 1] = falfaValue * 1;
     }
-    if (false)       //other elements
+    else       //boundary conditions bottom       
     {
-        falfa_e[1, 1] = 0; falfa_e[2, 1] = 0;
-        falfa_e[3, 1] = 0; falfa_e[4, 1] = 0;
+        falfaValue = ((input.HeatExchangingFactor2 * input.TemperatureBottom) * (xe[2] - xe[1])) / 2;
+        falfa_e[1, 1] = falfaValue * 1;
+        falfa_e[2, 1] = falfaValue * 1;
+        falfa_e[3, 1] = 0;
+        falfa_e[4, 1] = 0;
     }
+#endif
+
     for (int i = 1; i <= 4; i++)          //falfa building
     {
         var ii = nodeMap.GetNodeByLocalAddress(element, i).GlobalId;
@@ -280,61 +311,65 @@ decimal fq_value;
 var fq_e = new decimal[5, 2];
 var fq = new decimal[251, 2];
 
-for (int element = 1; element <= domainParams.NumberOfElements; element++)          //to one loop
+if(input.HeatStream != 0.0m)
 {
-    var xe = new decimal[5];
-    var ye = new decimal[5];
+    for (int element = 1; element <= domainParams.NumberOfElements; element++)          //to one loop
+    {
+        var xe = new decimal[5];
+        var ye = new decimal[5];
 
-    for (int j = 1; j <= 4; j++)            //to remove
-    {
-        xe[j] = nodeMap.GetNodeByLocalAddress(element, j).PosX;
-        ye[j] = nodeMap.GetNodeByLocalAddress(element, j).PosY;
-    }
+        for (int j = 1; j <= 4; j++)            //to remove
+        {
+            xe[j] = nodeMap.GetNodeByLocalAddress(element, j).PosX;
+            ye[j] = nodeMap.GetNodeByLocalAddress(element, j).PosY;
+        }
 
-    if (false)   //boundary conditions right
-    {
-        fq_value = (input.HeatStream * (ye[4] - ye[1])) / 2;
-        fq_e[1, 1] = 0;
-        fq_e[2, 1] = fq_value * 1;
-        fq_e[3, 1] = fq_value * 1;
-        fq_e[4, 1] = 0;
-    }
-    if (element == 1 || element == 3)       //boundary conditions left     
-    {
-        fq_value = (input.HeatStream * (ye[4] - ye[1])) / 2;
-        fq_e[1, 1] = fq_value * 1;
-        fq_e[2, 1] = 0;
-        fq_e[3, 1] = 0;
-        fq_e[4, 1] = fq_value * 1;
-    }
-    if (false)       //boundary conditions bottom       
-    {
-        fq_value = (input.HeatStream * (xe[2] - xe[1])) / 2;
-        fq_e[1, 1] = fq_value * 1;
-        fq_e[2, 1] = fq_value * 1;
-        fq_e[3, 1] = 0;
-        fq_e[4, 1] = 0;
-    }
-    if (false)       //boundary conditions top        
-    {
-        fq_value = (input.HeatStream * (xe[2] - xe[1])) / 2;
-        fq_e[1, 1] = 0;
-        fq_e[2, 1] = 0;
-        fq_e[3, 1] = fq_value * 1;
-        fq_e[4, 1] = fq_value * 1;
-    }
-    if (element == 2 || element == 4)       //other elements
-    {
-        fq_e[1, 1] = 0; fq_e[2, 1] = 0;
-        fq_e[3, 1] = 0; fq_e[4, 1] = 0;
-    }
-    for (int i = 1; i <= 4; i++)          //falfa building
-    {
-        var ii = nodeMap.GetNodeByLocalAddress(element, i).GlobalId;
-        if (ii > 0)
-            fq[ii, 1] = fq[ii, 1] + fq_e[i, 1];
+        if (false)   //boundary conditions right
+        {
+            fq_value = (input.HeatStream * (ye[4] - ye[1])) / 2;
+            fq_e[1, 1] = 0;
+            fq_e[2, 1] = fq_value * 1;
+            fq_e[3, 1] = fq_value * 1;
+            fq_e[4, 1] = 0;
+        }
+        if (element == 1 || element == 3)       //boundary conditions left     
+        {
+            fq_value = (input.HeatStream * (ye[4] - ye[1])) / 2;
+            fq_e[1, 1] = fq_value * 1;
+            fq_e[2, 1] = 0;
+            fq_e[3, 1] = 0;
+            fq_e[4, 1] = fq_value * 1;
+        }
+        if (false)       //boundary conditions bottom       
+        {
+            fq_value = (input.HeatStream * (xe[2] - xe[1])) / 2;
+            fq_e[1, 1] = fq_value * 1;
+            fq_e[2, 1] = fq_value * 1;
+            fq_e[3, 1] = 0;
+            fq_e[4, 1] = 0;
+        }
+        if (false)       //boundary conditions top        
+        {
+            fq_value = (input.HeatStream * (xe[2] - xe[1])) / 2;
+            fq_e[1, 1] = 0;
+            fq_e[2, 1] = 0;
+            fq_e[3, 1] = fq_value * 1;
+            fq_e[4, 1] = fq_value * 1;
+        }
+        if (element == 2 || element == 4)       //other elements
+        {
+            fq_e[1, 1] = 0; fq_e[2, 1] = 0;
+            fq_e[3, 1] = 0; fq_e[4, 1] = 0;
+        }
+        for (int i = 1; i <= 4; i++)          //falfa building
+        {
+            var ii = nodeMap.GetNodeByLocalAddress(element, i).GlobalId;
+            if (ii > 0)
+                fq[ii, 1] = fq[ii, 1] + fq_e[i, 1];
+        }
     }
 }
+
 
 #if VERBOSE
 Console.WriteLine("\nfq vector:");
@@ -354,8 +389,11 @@ Console.WriteLine("\nf vector:");
 PrintVector(f, domainParams.NumberOfNodes);
 #endif
 
-//var initialValues = new Dictionary<int, decimal> { {3, 100m}, { 6, 100m }, { 9, 100m } };
 var initialValues = new Dictionary<int, decimal> { };
+#if TEST_DATA
+initialValues = new Dictionary<int, decimal> { { 3, 100m }, { 6, 100m }, { 9, 100m } };
+#endif
+
 var a = new AMatrix(initialValues, KSum, f, domainParams);
 
 #if VERBOSE
@@ -365,17 +403,38 @@ PrintMatrixWithSizes(a, domainParams.NumberOfNodes + 1, domainParams.NumberOfNod
 
 var gaussResult = GaussSolver.Solve(domainParams.NumberOfNodes, a);
 
+
+#if HORIZONTAL_GAUSS
 Console.WriteLine("\nGAUSS RESULTS:");
-for (int i = domainParams.VerticalElementsQuantity-1; i >= 0; i--)
+for (int i = domainParams.VerticalElementsQuantity - 1; i >= 0; i--)
 {
-    for (int j = i* domainParams.HorizontalElementsQuantity; j < (i+1) * domainParams.HorizontalElementsQuantity; j++)
+    for (int j = i * domainParams.HorizontalElementsQuantity; j < (i + 1) * domainParams.HorizontalElementsQuantity; j++)
     {
-        Console.Write($"{(j + 1):D2}={gaussResult[i]:F4} ");
+        Console.Write($"{(j + 1):D2}={gaussResult[j]:F4} ");
     }
     Console.Write($"\n");
 }
+#endif
+#if VERTICAL_GAUSS
+Console.WriteLine("\nGAUSS RESULTS:");
+for (int j = 0; j < domainParams.HorizontalElementsQuantity; j++)
+{
+    int firstElement = j;
+    int secondElement = j + domainParams.HorizontalElementsQuantity;
+    int thirdElement = j + 2*domainParams.HorizontalElementsQuantity;
 
-
+    Console.WriteLine($"{(firstElement + 1):D2}={gaussResult[firstElement]:F4}\t" +
+        $"{(secondElement +  + 1):D2}={gaussResult[secondElement]:F4}\t" +
+        $"{(thirdElement + 1):D2}={gaussResult[thirdElement]:F4}\t");
+}
+#endif
+#if SINGLE_GAUSS
+Console.WriteLine("\nGAUSS RESULTS:");
+for (int i = 0; i < domainParams.NumberOfNodes; i++)
+{
+    Console.WriteLine($"X[{(i + 1):D2}] = {gaussResult[i]:F4}");
+}
+#endif
 
 static void PrintMatrix<T>(T[,] matrix, int size)
 {

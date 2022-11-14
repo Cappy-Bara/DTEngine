@@ -14,5 +14,7 @@
 	"TemperatureBottom": 20.0,
 	"TemperatureTop": 500.0,
 	"TemperatureLeft": 500.0,
-	"TemperatureRight": 500.0
+	"TemperatureRight": 500.0,
+	"HeatCapacity": 20.0,
+	"Density": 20.0
 }

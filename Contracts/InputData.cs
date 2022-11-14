@@ -32,5 +32,8 @@ namespace DTEngine.Contracts
         public decimal TemperatureTop { get; set; }    //t_czynnika2;
         public decimal TemperatureLeft { get; set; }    //t_czynnika3;
         public decimal TemperatureRight { get; set; }    //t_czynnika4;
+
+        public decimal HeatCapacity { get; set; } //pojemnosc cieplna 
+        public decimal Density { get; set; }      //gęstość
     }
 }

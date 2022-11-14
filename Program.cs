@@ -1,4 +1,4 @@
-﻿//#define VERBOSE
+﻿#define VERBOSE
 //#define TEST_DATA
 //#define HORIZONTAL_GAUSS
 #define VERTICAL_GAUSS
@@ -145,7 +145,7 @@ for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
     }
 #endif
 
-    for (int i = 1; i <= 4; i++)          //building global Kalpha
+    for (int i = 1; i <= 4; i++)          //building global Kalpha          //TU ŹLE?
     {
         int ii = nodeMap.GetNodeByLocalAddress(elementId, i).GlobalId;
         for (int j = 1; j <= 4; j++)
@@ -435,6 +435,29 @@ for (int i = 0; i < domainParams.NumberOfNodes; i++)
     Console.WriteLine($"X[{(i + 1):D2}] = {gaussResult[i]:F4}");
 }
 #endif
+
+var heatCapacityMatrix = new decimal[5, 5];
+var heatCapacityFactor = input.HeatCapacity * input.Density * input.Width * input.Height;
+var baseHeatCapacityMatrix = new decimal[,] { {0,0,0,0,0 }, {0, 4, 2, 1, 2 }, {0, 2, 4, 2, 1 }, { 0, 1, 2, 4, 2 }, {0,2, 1, 2, 4 }};
+
+#if VERBOSE
+Console.WriteLine("\nBASE HEAT CAPACITY MATRIX:");
+PrintMatrix(baseHeatCapacityMatrix, 5);
+#endif
+
+for (int i = 1; i < 5; i++)
+{
+    for (int j = 1; j < 5; j++)
+    {
+        heatCapacityMatrix[i,j] = baseHeatCapacityMatrix[i,j] * heatCapacityFactor;
+    }
+}
+
+#if VERBOSE
+Console.WriteLine("\nHEAT CAPACITY MATRIX:");
+PrintMatrix(heatCapacityMatrix, 5);
+#endif
+
 
 static void PrintMatrix<T>(T[,] matrix, int size)
 {

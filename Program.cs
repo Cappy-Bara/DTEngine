@@ -439,6 +439,8 @@ for (int i = 0; i < domainParams.NumberOfNodes; i++)
 
 var heatCapacityMatrix = new decimal[4, 4];
 var heatCapacityFactor = input.HeatCapacity * input.Density * input.Width * input.Height;
+var heatCapacityMatixNew = new HeatCapacityMatrix(input.HeatCapacity, input.Density, input.Width,input.Height, domainParams,nodeMap);
+
 var baseHeatCapacityMatrix = new decimal[,] { {0,0,0,0,0 }, {0, 4, 2, 1, 2 }, {0, 2, 4, 2, 1 }, { 0, 1, 2, 4, 2 }, {0,2, 1, 2, 4 }};
 
 #if VERBOSE
@@ -459,12 +461,21 @@ Console.WriteLine("\nHEAT CAPACITY MATRIX:");
 PrintMatrix(heatCapacityMatrix, 4, 0);
 //#endif
 
-var invHeatMatrix = heatCapacityMatrix.Inverse();
+
+//var invHeatMatrix = heatCapacityMatrix.Inverse();
+///
+var invHeatMatrix = heatCapacityMatixNew.GenerateGlobalMatrix();
+invHeatMatrix = invHeatMatrix.RemoveColumn(0);
+invHeatMatrix = invHeatMatrix.RemoveRow(0);
+invHeatMatrix = invHeatMatrix.Inverse();
+///
+
+
 var invHeatMatrix2 = new decimal[64, 64];
 
-for (int i = 1; i < 5; i++)
+for (int i = 1; i < 64; i++)
 {
-    for (int j = 1; j < 5; j++)
+    for (int j = 1; j < 64; j++)
     {
         invHeatMatrix2[i, j] = invHeatMatrix[i-1,j-1];
     }
@@ -497,8 +508,6 @@ for (int i = 1; i <= nw; i++)
 {
     t[i, 1] = 20m;
 }
-
-
 
 for (int k = 1; k <= nw; k++)
 {

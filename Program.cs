@@ -1,9 +1,10 @@
-﻿#define VERBOSE
+﻿//#define VERBOSE
 //#define TEST_DATA
 //#define HORIZONTAL_GAUSS
 #define VERTICAL_GAUSS
 //#define SINGLE_GAUSS
 
+using Accord.Math;
 using DTEngine.Entities;
 using DTEngine.Entities.ComputingDomain;
 using DTEngine.Entities.Gauss;
@@ -436,7 +437,7 @@ for (int i = 0; i < domainParams.NumberOfNodes; i++)
 }
 #endif
 
-var heatCapacityMatrix = new decimal[5, 5];
+var heatCapacityMatrix = new decimal[4, 4];
 var heatCapacityFactor = input.HeatCapacity * input.Density * input.Width * input.Height;
 var baseHeatCapacityMatrix = new decimal[,] { {0,0,0,0,0 }, {0, 4, 2, 1, 2 }, {0, 2, 4, 2, 1 }, { 0, 1, 2, 4, 2 }, {0,2, 1, 2, 4 }};
 
@@ -445,25 +446,130 @@ Console.WriteLine("\nBASE HEAT CAPACITY MATRIX:");
 PrintMatrix(baseHeatCapacityMatrix, 5);
 #endif
 
+for (int i = 0; i < 4; i++)
+{
+    for (int j = 0; j < 4; j++)
+    {
+        heatCapacityMatrix[i,j] = baseHeatCapacityMatrix[i+1,j+1] * heatCapacityFactor;
+    }
+}
+
+//#if VERBOSE
+Console.WriteLine("\nHEAT CAPACITY MATRIX:");
+PrintMatrix(heatCapacityMatrix, 4, 0);
+//#endif
+
+var invHeatMatrix = heatCapacityMatrix.Inverse();
+var invHeatMatrix2 = new decimal[64, 64];
+
 for (int i = 1; i < 5; i++)
 {
     for (int j = 1; j < 5; j++)
     {
-        heatCapacityMatrix[i,j] = baseHeatCapacityMatrix[i,j] * heatCapacityFactor;
+        invHeatMatrix2[i, j] = invHeatMatrix[i-1,j-1];
     }
 }
 
-#if VERBOSE
-Console.WriteLine("\nHEAT CAPACITY MATRIX:");
-PrintMatrix(heatCapacityMatrix, 5);
-#endif
 
 
-static void PrintMatrix<T>(T[,] matrix, int size)
+//var invHeatMatrix = MatrixInverter.Invert(heatCapacityMatrix, 4);
+
+//#if VERBOSE
+Console.WriteLine("\nINVERSED HEAT CAPACITY MATRIX:");
+PrintMatrix(invHeatMatrix, 4, 0);
+//#endif
+
+
+
+// TIME INTEGRATION
+//węzły? - 63
+var nw = 63;
+var m1 = new decimal[64,2]; 
+var m2 = new decimal[64,2]; 
+var m3 = new decimal[64,2]; 
+var m4 = new decimal[64,2]; 
+var m5 = new decimal[64,2];
+var dt_time = 0.005m;                                     
+var t = new decimal[64,2];
+
+//beggining T Value
+for (int i = 1; i <= nw; i++)
 {
-    for (int i = 1; i < size; i++)
+    t[i, 1] = 20m;
+}
+
+
+
+for (int k = 1; k <= nw; k++)
+{
+    for (int j = 1; j <= 1; j++)
     {
-        for (int j = 1; j < size; j++)
+        m1[k,j] = 0;
+        for (int i = 1; i <= nw; i++)
+        {
+            m1[k,j] = m1[k,j] + (invHeatMatrix2[k,i] * f[i,j]);
+        }
+    }
+}
+//2 operation
+for (int k = 1; k <= nw; k++)
+{
+    for (int j = 1; j <= 1; j++)
+    {
+        m2[k,j] = 0;
+        for (int i = 1; i <= nw; i++)
+        {
+            m2[k,j] = m2[k,j] + (KSum[k,i] * t[i,j]);
+        }
+    }
+}
+//3 operation
+for (int k = 1; k <= nw; k++)
+{
+    for (int j = 1; j <= 1; j++)
+    {
+        m3[k,j] = 0;
+        for (int i = 1; i <= nw; i++)
+        {
+            m3[k,j] = m3[k,j] + (invHeatMatrix2[k,i] * m2[i,j]);
+        }
+    }
+}
+//4 operation
+for (int k = 1; k <= nw; k++)
+{
+    for (int j = 1; j <= 1; j++)
+    {
+        m4[k,j] = m1[k,j] - m3[k,j];
+    }
+}
+//5 operation
+for (int k = 1; k <= nw; k++)
+{
+    for (int j = 1; j <= 1; j++)
+    {
+        m5[k,j] = m4[k,j] * dt_time;
+    }
+}
+//6 operation
+for (int k = 1; k <= nw; k++)
+{
+    for (int j = 1; j <= 1; j++)
+    {
+        t[k,j] = t[k,j] + m5[k,j];
+    }
+}
+
+
+Console.WriteLine("\nTime vector");
+PrintVector(t, 63);
+
+
+static void PrintMatrix<T>(T[,] matrix, int size, int from = 1)
+{
+    for (int i = from; i < size; i++)
+    {
+        for (int j = from; j < size; j++)
         {
             Console.Write($"\t{matrix[i, j]} ");
         }

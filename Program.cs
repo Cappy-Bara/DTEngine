@@ -1,7 +1,8 @@
 ﻿//#define VERBOSE
 //#define TEST_DATA
+//#define SHOULD_GAUSS
 //#define HORIZONTAL_GAUSS
-#define VERTICAL_GAUSS
+//#define VERTICAL_GAUSS
 //#define SINGLE_GAUSS
 
 using Accord.Math;
@@ -29,6 +30,12 @@ Console.WriteLine($"Number of nodes: {domainParams.NumberOfNodes}");
 #endif
 
 var nodeMap = new NodeMap(domainParams);
+
+
+///
+input.HeatSourcePower = 20 * input.Density * input.HeatCapacity;
+
+
 var stiffnessMatrix = new StiffnessMatrix(input.ConductingFactorX, domainParams, nodeMap);
 
 #if VERBOSE
@@ -98,20 +105,6 @@ for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
 
     var element = nodeMap.GetElementById(elementId);
 
-    if (false)      //boundary conditions, right side
-    {
-        //heat exchange - local numeration 2-3 side
-        delta = (input.HeatExchangingFactor2 * (element.Node4.PosY - element.Node1.PosY)) / 6;
-        localAlfa = alfa23;
-    }
-
-    if (false)             //boundary conditions, left side        
-    {
-        //heat exchange - local numeration 4-1 side
-        delta = (input.HeatExchangingFactor4 * (element.Node4.PosY - element.Node1.PosY)) / 6;
-        localAlfa = alfa41;
-    }
-
 #if TEST_DATA
     if (elementId == 1 || elementId == 2)              //boundary conditions, bottom TEST
     {
@@ -146,7 +139,7 @@ for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
     }
 #endif
 
-    for (int i = 1; i <= 4; i++)          //building global Kalpha          //TU ŹLE?
+    for (int i = 1; i <= 4; i++)
     {
         int ii = nodeMap.GetNodeByLocalAddress(elementId, i).GlobalId;
         for (int j = 1; j <= 4; j++)
@@ -227,24 +220,6 @@ for (int element = 1; element <= domainParams.NumberOfElements; element++)
         xe[j] = nodeMap.GetNodeByLocalAddress(element, j).PosX;
         ye[j] = nodeMap.GetNodeByLocalAddress(element, j).PosY;
     }
-
-    if (false)   //boundary conditions right
-    {
-        falfaValue = ((input.HeatExchangingFactor2 * input.TemperatureRight) * (ye[4] - ye[1])) / 2;
-        falfa_e[1, 1] = 0;
-        falfa_e[2, 1] = falfaValue * 1;
-        falfa_e[3, 1] = falfaValue * 1;
-        falfa_e[4, 1] = 0;
-    }
-    if (false)       //boundary conditions left     
-    {
-        falfaValue = ((input.HeatExchangingFactor4 * input.TemperatureLeft) * (ye[4] - ye[1])) / 2;
-        falfa_e[1, 1] = falfaValue * 1;
-        falfa_e[2, 1] = 0;
-        falfa_e[3, 1] = 0;
-        falfa_e[4, 1] = falfaValue * 1;
-    }
-
 #if TEST_DATA
     if (element == 1 || element == 2)       //boundary conditions bottom       
     {
@@ -312,6 +287,8 @@ decimal fq_value;
 var fq_e = new decimal[5, 2];
 var fq = new decimal[251, 2];
 
+
+//TO_REMOVE
 if(input.HeatStream != 0.0m)
 {
     for (int element = 1; element <= domainParams.NumberOfElements; element++)          //to one loop
@@ -324,37 +301,12 @@ if(input.HeatStream != 0.0m)
             xe[j] = nodeMap.GetNodeByLocalAddress(element, j).PosX;
             ye[j] = nodeMap.GetNodeByLocalAddress(element, j).PosY;
         }
-
-        if (false)   //boundary conditions right
-        {
-            fq_value = (input.HeatStream * (ye[4] - ye[1])) / 2;
-            fq_e[1, 1] = 0;
-            fq_e[2, 1] = fq_value * 1;
-            fq_e[3, 1] = fq_value * 1;
-            fq_e[4, 1] = 0;
-        }
         if (element == 1 || element == 3)       //boundary conditions left     
         {
             fq_value = (input.HeatStream * (ye[4] - ye[1])) / 2;
             fq_e[1, 1] = fq_value * 1;
             fq_e[2, 1] = 0;
             fq_e[3, 1] = 0;
-            fq_e[4, 1] = fq_value * 1;
-        }
-        if (false)       //boundary conditions bottom       
-        {
-            fq_value = (input.HeatStream * (xe[2] - xe[1])) / 2;
-            fq_e[1, 1] = fq_value * 1;
-            fq_e[2, 1] = fq_value * 1;
-            fq_e[3, 1] = 0;
-            fq_e[4, 1] = 0;
-        }
-        if (false)       //boundary conditions top        
-        {
-            fq_value = (input.HeatStream * (xe[2] - xe[1])) / 2;
-            fq_e[1, 1] = 0;
-            fq_e[2, 1] = 0;
-            fq_e[3, 1] = fq_value * 1;
             fq_e[4, 1] = fq_value * 1;
         }
         if (element == 2 || element == 4)       //other elements
@@ -377,7 +329,6 @@ Console.WriteLine("\nfq vector:");
 PrintVector(fq, domainParams.NumberOfNodes);
 #endif
 
-
 // f vector
 var f = new decimal[251, 2];
 for (int i = 1; i < domainParams.NumberOfNodes + 1; i++)
@@ -390,19 +341,23 @@ Console.WriteLine("\nf vector:");
 PrintVector(f, domainParams.NumberOfNodes);
 #endif
 
+
+#if SHOULD_GAUSS
 var initialValues = new Dictionary<int, decimal> { };
+var a = new AMatrix(initialValues, KSum, f, domainParams);
+var gaussResult = GaussSolver.Solve(domainParams.NumberOfNodes, a);
+#endif
+
 #if TEST_DATA
 initialValues = new Dictionary<int, decimal> { { 3, 100m }, { 6, 100m }, { 9, 100m } };
 #endif
 
-var a = new AMatrix(initialValues, KSum, f, domainParams);
 
 #if VERBOSE
 Console.WriteLine("\nA Matrix:");
 PrintMatrixWithSizes(a, domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes, 1);
 #endif
 
-var gaussResult = GaussSolver.Solve(domainParams.NumberOfNodes, a);
 
 
 #if HORIZONTAL_GAUSS
@@ -437,38 +392,26 @@ for (int i = 0; i < domainParams.NumberOfNodes; i++)
 }
 #endif
 
-var heatCapacityMatrix = new decimal[4, 4];
-var heatCapacityFactor = input.HeatCapacity * input.Density * input.Width * input.Height;
-var heatCapacityMatixNew = new HeatCapacityMatrix(input.HeatCapacity, input.Density, input.Width,input.Height, domainParams,nodeMap);
-
-var baseHeatCapacityMatrix = new decimal[,] { {0,0,0,0,0 }, {0, 4, 2, 1, 2 }, {0, 2, 4, 2, 1 }, { 0, 1, 2, 4, 2 }, {0,2, 1, 2, 4 }};
+var heatCapacityMatix = new HeatCapacityMatrix(input.HeatCapacity, input.Density, 0.01m, domainParams,nodeMap);
 
 #if VERBOSE
 Console.WriteLine("\nBASE HEAT CAPACITY MATRIX:");
 PrintMatrix(baseHeatCapacityMatrix, 5);
 #endif
 
-for (int i = 0; i < 4; i++)
-{
-    for (int j = 0; j < 4; j++)
-    {
-        heatCapacityMatrix[i,j] = baseHeatCapacityMatrix[i+1,j+1] * heatCapacityFactor;
-    }
-}
 
-//#if VERBOSE
+///
+var heatMatrix = heatCapacityMatix.GenerateGlobalMatrix();
+
+#if VERBOSE
 Console.WriteLine("\nHEAT CAPACITY MATRIX:");
-PrintMatrix(heatCapacityMatrix, 4, 0);
-//#endif
+PrintMatrix(heatMatrix, 63, 0);
+#endif
 
 
-//var invHeatMatrix = heatCapacityMatrix.Inverse();
-///
-var invHeatMatrix = heatCapacityMatixNew.GenerateGlobalMatrix();
-invHeatMatrix = invHeatMatrix.RemoveColumn(0);
-invHeatMatrix = invHeatMatrix.RemoveRow(0);
-invHeatMatrix = invHeatMatrix.Inverse();
-///
+heatMatrix = heatMatrix.RemoveColumn(0);
+heatMatrix = heatMatrix.RemoveRow(0);
+var invHeatMatrix = heatMatrix.Inverse();
 
 
 var invHeatMatrix2 = new decimal[64, 64];
@@ -481,27 +424,26 @@ for (int i = 1; i < 64; i++)
     }
 }
 
-
-
-//var invHeatMatrix = MatrixInverter.Invert(heatCapacityMatrix, 4);
-
 #if VERBOSE
 Console.WriteLine("\nINVERSED HEAT CAPACITY MATRIX:");
 PrintMatrix(invHeatMatrix, 63, 0);
 #endif
 
 
-
 // TIME INTEGRATION
-//węzły? - 63
 var nw = 63;
 var m1 = new decimal[64,2]; 
 var m2 = new decimal[64,2]; 
 var m3 = new decimal[64,2]; 
 var m4 = new decimal[64,2]; 
 var m5 = new decimal[64,2];
-var dt_time = 0.005m;                                     
 var t = new decimal[64,2];
+
+var dt_time = 0.005m;
+var timeS = 5m;
+int steps = (int)(timeS / dt_time);
+int printTime = (int)(1.0m / dt_time);
+int sec = 0;
 
 //beggining T Value
 for (int i = 1; i <= nw; i++)
@@ -509,10 +451,11 @@ for (int i = 1; i <= nw; i++)
     t[i, 1] = 20m;
 }
 
+#region calculus
 
-for (int step = 0; step < 100000; step++)
+for (int step = 0; step <= steps; step++)
 {
-
+    //1 operation - (m-1*f)
     for (int k = 1; k <= nw; k++)
     {
         for (int j = 1; j <= 1; j++)
@@ -573,11 +516,26 @@ for (int step = 0; step < 100000; step++)
         }
     }
 
+
+    if (step % printTime == 0) { 
+        
+        Console.WriteLine($"\nTime vector    -   {sec}sec   -> step {step}");
+        for (int j = 1; j <= domainParams.HorizontalElementsQuantity; j++)
+        {
+            int firstElement = j;
+            int secondElement = j + domainParams.HorizontalElementsQuantity;
+            int thirdElement = j + 2 * domainParams.HorizontalElementsQuantity;
+
+            Console.WriteLine($"{firstElement:D2}={t[firstElement, 1]:F4}\t" +
+                $"{secondElement:D2}={t[secondElement, 1]:F4}\t" +
+                $"{thirdElement:D2}={t[thirdElement, 1]:F4}\t");
+        }
+        sec++;
+    }
 }
 
+#endregion calculus
 
-Console.WriteLine("\nTime vector");
-PrintVector(t, 63);
 
 
 static void PrintMatrix<T>(T[,] matrix, int size, int from = 1)

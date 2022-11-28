@@ -8,7 +8,6 @@ namespace DTEngine.Contracts
 {
     public class InputData
     {
-        //Tu powinny być chyba tablice\
         public int HorizontalNodesQuantity { get; set; }         //nlh
         public int VerticalNodesQuantity { get; set; }           //nlv
         public decimal Height { get; set; }                           //h

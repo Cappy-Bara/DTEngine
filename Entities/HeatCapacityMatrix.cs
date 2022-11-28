@@ -1,4 +1,5 @@
 ﻿using DTEngine.Entities.ComputingDomain;
+using System.Globalization;
 
 namespace DTEngine.Entities
 {
@@ -12,10 +13,10 @@ namespace DTEngine.Entities
 
         private decimal[,]? globalStiffnessMatrix;
 
-        public HeatCapacityMatrix(decimal heatCapacity, decimal density, decimal width, decimal height, ComputationalDomainParams domainParams, NodeMap nodeMap)
+        public HeatCapacityMatrix(decimal heatCapacity, decimal density, decimal elementSize, ComputationalDomainParams domainParams, NodeMap nodeMap)
         {
             var baseHeatCapacityMatrix = new decimal[,] { { 0, 0, 0, 0, 0 }, { 0, 4, 2, 1, 2 }, { 0, 2, 4, 2, 1 }, { 0, 1, 2, 4, 2 }, { 0, 2, 1, 2, 4 } };
-            var heatCapacityFactor = heatCapacity * density * width * height;
+            var heatCapacityFactor = heatCapacity * density * elementSize * elementSize / 36;
 
             for (int i = 0; i < 4; i++)
             {

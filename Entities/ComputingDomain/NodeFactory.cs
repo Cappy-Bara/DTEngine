@@ -17,7 +17,7 @@ namespace DTEngine.Entities.ComputingDomain
         public Node CreateNode(int globalId)
         {
             var column = (globalId - 1) % domainParams.HorizontalElementsQuantity;
-            var row = (globalId - 1) / domainParams.VerticalElementsQuantity;
+            var row = (globalId - 1) / domainParams.HorizontalElementsQuantity;
 
             var posX = column * domainParams.WidthStep;
             var posY = row * domainParams.HeightStep;

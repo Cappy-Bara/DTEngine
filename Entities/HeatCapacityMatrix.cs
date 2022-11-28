@@ -21,29 +21,9 @@ namespace DTEngine.Entities
             {
                 for (int j = 0; j < 4; j++)
                 {
-                    LocalHeatCapacityMatrix[i, j] = baseHeatCapacityMatrix[i + 1, j + 1] * heatCapacityFactor;
+                    LocalHeatCapacityMatrix[i+1, j+1] = baseHeatCapacityMatrix[i + 1, j + 1] * heatCapacityFactor;
                 }
             }
-
-            LocalHeatCapacityMatrix[1, 1] = heatCapacityFactor * 4;
-            LocalHeatCapacityMatrix[1, 2] = heatCapacityFactor * -1;
-            LocalHeatCapacityMatrix[1, 3] = heatCapacityFactor * -2;
-            LocalHeatCapacityMatrix[1, 4] = heatCapacityFactor * -1;
-
-            LocalHeatCapacityMatrix[2, 1] = heatCapacityFactor * -1;
-            LocalHeatCapacityMatrix[2, 2] = heatCapacityFactor * 4;
-            LocalHeatCapacityMatrix[2, 3] = heatCapacityFactor * -1;
-            LocalHeatCapacityMatrix[2, 4] = heatCapacityFactor  * -2;
-
-            LocalHeatCapacityMatrix[3, 1] = heatCapacityFactor * -2;
-            LocalHeatCapacityMatrix[3, 2] = heatCapacityFactor * -1;
-            LocalHeatCapacityMatrix[3, 3] = heatCapacityFactor * 4;
-            LocalHeatCapacityMatrix[3, 4] = heatCapacityFactor * -1;
-
-            LocalHeatCapacityMatrix[4, 1] = heatCapacityFactor * -1;
-            LocalHeatCapacityMatrix[4, 2] = heatCapacityFactor * -2;
-            LocalHeatCapacityMatrix[4, 3] = heatCapacityFactor * -1;
-            LocalHeatCapacityMatrix[4, 4] = heatCapacityFactor * 4;
 
             globalStiffnessMatrix = null;
             this.domainParams = domainParams;

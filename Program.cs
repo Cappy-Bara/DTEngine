@@ -485,10 +485,10 @@ for (int i = 1; i < 64; i++)
 
 //var invHeatMatrix = MatrixInverter.Invert(heatCapacityMatrix, 4);
 
-//#if VERBOSE
+#if VERBOSE
 Console.WriteLine("\nINVERSED HEAT CAPACITY MATRIX:");
-PrintMatrix(invHeatMatrix, 4, 0);
-//#endif
+PrintMatrix(invHeatMatrix, 63, 0);
+#endif
 
 
 
@@ -509,64 +509,70 @@ for (int i = 1; i <= nw; i++)
     t[i, 1] = 20m;
 }
 
-for (int k = 1; k <= nw; k++)
+
+for (int step = 0; step < 100000; step++)
 {
-    for (int j = 1; j <= 1; j++)
+
+    for (int k = 1; k <= nw; k++)
     {
-        m1[k,j] = 0;
-        for (int i = 1; i <= nw; i++)
+        for (int j = 1; j <= 1; j++)
         {
-            m1[k,j] = m1[k,j] + (invHeatMatrix2[k,i] * f[i,j]);
+            m1[k,j] = 0;
+            for (int i = 1; i <= nw; i++)
+            {
+                m1[k,j] = m1[k,j] + (invHeatMatrix2[k,i] * f[i,j]);
+            }
         }
     }
-}
-//2 operation
-for (int k = 1; k <= nw; k++)
-{
-    for (int j = 1; j <= 1; j++)
+    //2 operation
+    for (int k = 1; k <= nw; k++)
     {
-        m2[k,j] = 0;
-        for (int i = 1; i <= nw; i++)
+        for (int j = 1; j <= 1; j++)
         {
-            m2[k,j] = m2[k,j] + (KSum[k,i] * t[i,j]);
+            m2[k,j] = 0;
+            for (int i = 1; i <= nw; i++)
+            {
+                m2[k,j] = m2[k,j] + (KSum[k,i] * t[i,j]);
+            }
         }
     }
-}
-//3 operation
-for (int k = 1; k <= nw; k++)
-{
-    for (int j = 1; j <= 1; j++)
+    //3 operation
+    for (int k = 1; k <= nw; k++)
     {
-        m3[k,j] = 0;
-        for (int i = 1; i <= nw; i++)
+        for (int j = 1; j <= 1; j++)
         {
-            m3[k,j] = m3[k,j] + (invHeatMatrix2[k,i] * m2[i,j]);
+            m3[k,j] = 0;
+            for (int i = 1; i <= nw; i++)
+            {
+                m3[k,j] = m3[k,j] + (invHeatMatrix2[k,i] * m2[i,j]);
+            }
         }
     }
-}
-//4 operation
-for (int k = 1; k <= nw; k++)
-{
-    for (int j = 1; j <= 1; j++)
+    //4 operation
+    for (int k = 1; k <= nw; k++)
     {
-        m4[k,j] = m1[k,j] - m3[k,j];
+        for (int j = 1; j <= 1; j++)
+        {
+            m4[k,j] = m1[k,j] - m3[k,j];
+        }
     }
-}
-//5 operation
-for (int k = 1; k <= nw; k++)
-{
-    for (int j = 1; j <= 1; j++)
+    //5 operation
+    for (int k = 1; k <= nw; k++)
     {
-        m5[k,j] = m4[k,j] * dt_time;
+        for (int j = 1; j <= 1; j++)
+        {
+            m5[k,j] = m4[k,j] * dt_time;
+        }
     }
-}
-//6 operation
-for (int k = 1; k <= nw; k++)
-{
-    for (int j = 1; j <= 1; j++)
+    //6 operation
+    for (int k = 1; k <= nw; k++)
     {
-        t[k,j] = t[k,j] + m5[k,j];
+        for (int j = 1; j <= 1; j++)
+        {
+            t[k,j] = t[k,j] + m5[k,j];
+        }
     }
+
 }
 
 

@@ -1,4 +1,5 @@
 ﻿using DTEngine.Entities.ComputingDomain;
+using DTEngine.Helpers;
 using DTEngine.Utilities;
 using System;
 
@@ -37,6 +38,8 @@ namespace DTEngine.Entities.Gauss
                 var isInitValue = initValues.TryGetValue(row + 1, out var value);
                 a[row, domainParams.NumberOfNodes] = isInitValue ? value : f[row + 1, 1];
             }
+
+            a.Dump("A MATRIX", 1, domainParams.NumberOfNodes);
         }
 
         public decimal this[int index, int index2]

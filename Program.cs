@@ -1,22 +1,20 @@
-﻿//#define VERBOSE
-//#define TEST_DATA
-//#define SHOULD_GAUSS
-//#define HORIZONTAL_GAUSS
-//#define VERTICAL_GAUSS
-//#define SINGLE_GAUSS
+﻿//#define TEST_DATA
+#define SHOULD_GAUSS
+#define VERTICAL_GAUSS
+#define VERBOSE
 
 using Accord.Math;
 using DTEngine.Entities;
 using DTEngine.Entities.ComputingDomain;
 using DTEngine.Entities.FVector;
 using DTEngine.Entities.FVector.FAlpha;
+using DTEngine.Entities.Gauss;
 using DTEngine.Helpers;
 
 string InputFileLocation = "C:\\Repos\\DTEngine\\InputFileFull.json";
 #if TEST_DATA
 InputFileLocation = "C:\\Repos\\DTEngine\\InputFileTest.json";
 #endif
-
 
 var input = FileHandler.ReadFromFile(InputFileLocation);
 var domainParams = new ComputationalDomainParams(input);
@@ -29,7 +27,7 @@ Console.WriteLine($"Number of nodes: {domainParams.NumberOfNodes}");
 
 var nodeMap = new NodeMap(domainParams);
 
-input.HeatSourcePower = 20 * input.Density * input.HeatCapacity;
+//input.HeatSourcePower = 20 * input.Density * input.HeatCapacity;
 
 var stiffnessMatrix = new StiffnessMatrix(input.ConductingFactorX, domainParams, nodeMap);
 stiffnessMatrix.GlobalStiffnessMatrix.Dump("GLOBAL STIFFNESS MATRIX:", 1, domainParams.NumberOfNodes + 1);
@@ -41,44 +39,28 @@ alfa12[1, 1] =  2;
 alfa12[1, 2] =  1;
 alfa12[2, 2] = 2;
 alfa12[2, 1] = 1;
-
-#if VERBOSE
-Console.WriteLine("\nAlfa 12");
-PrintMatrix(alfa12, 5);
-#endif
+alfa12.Dump("ALFA 12:",1,5);
 
 var alfa23 = new decimal[5, 5];
 alfa23[2, 2] = 2;
 alfa23[2, 3] = 1;
 alfa23[3, 2] = 1;
 alfa23[3, 3] = 2;
-
-#if VERBOSE
-Console.WriteLine("\nAlfa 23");
-PrintMatrix(alfa23, 5);
-#endif
+alfa23.Dump("ALFA 23:", 1, 5);
 
 var alfa34 = new decimal[5, 5];
 alfa34[3, 3] = 2;
 alfa34[3, 4] = 1;
 alfa34[4, 3] = 1;
 alfa34[4, 4] = 2;
-
-#if VERBOSE
-Console.WriteLine("\nAlfa 34");
-PrintMatrix(alfa34, 5);
-#endif
+alfa34.Dump("ALFA 34:", 1, 5);
 
 var alfa41 = new decimal[5, 5];
 alfa41[1, 1] = 2;
 alfa41[1, 4] = 1;
 alfa41[4, 1] = 1;
 alfa41[4, 4] = 2;
-
-#if VERBOSE
-Console.WriteLine("\nAlfa 41");
-PrintMatrix(alfa41, 5);
-#endif
+alfa41.Dump("ALFA 41:", 1, 5);
 
 #endregion ALFA_MATRIXES
 
@@ -185,32 +167,12 @@ var initialValues = new Dictionary<int, decimal> { };
 var a = new AMatrix(initialValues, KSum, f, domainParams);
 var gaussResult = GaussSolver.Solve(domainParams.NumberOfNodes, a);
 
-
-#if VERBOSE
-Console.WriteLine("\nA Matrix:");
-PrintMatrixWithSizes(a, domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes, 1);
-#endif
-
-
 #endif
 
 #if TEST_DATA
 initialValues = new Dictionary<int, decimal> { { 3, 100m }, { 6, 100m }, { 9, 100m } };
 #endif
 
-
-
-#if HORIZONTAL_GAUSS
-Console.WriteLine("\nGAUSS RESULTS:");
-for (int i = domainParams.VerticalElementsQuantity - 1; i >= 0; i--)
-{
-    for (int j = i * domainParams.HorizontalElementsQuantity; j < (i + 1) * domainParams.HorizontalElementsQuantity; j++)
-    {
-        Console.Write($"{(j + 1):D2}={gaussResult[j]:F4} ");
-    }
-    Console.Write($"\n");
-}
-#endif
 #if VERTICAL_GAUSS
 Console.WriteLine("\nGAUSS RESULTS:");
 for (int j = 0; j < domainParams.HorizontalElementsQuantity; j++)
@@ -224,16 +186,8 @@ for (int j = 0; j < domainParams.HorizontalElementsQuantity; j++)
         $"{(thirdElement + 1):D2}={gaussResult[thirdElement]:F4}\t");
 }
 #endif
-#if SINGLE_GAUSS
-Console.WriteLine("\nGAUSS RESULTS:");
-for (int i = 0; i < domainParams.NumberOfNodes; i++)
-{
-    Console.WriteLine($"X[{(i + 1):D2}] = {gaussResult[i]:F4}");
-}
-#endif
 
 var heatCapacityMatixFactory = new HeatCapacityMatrixFactory(input.HeatCapacity, input.Density, domainParams, nodeMap);
-
 
 var heatMatrix = heatCapacityMatixFactory.GenerateGlobalMatrix();
 
@@ -253,123 +207,24 @@ for (int i = 1; i < 64; i++)
 
 invHeatMatrix2.Dump("INVERSED HEAT CAPACITY MATRIX:",1,domainParams.NumberOfNodes+1);
 
-
 // TIME INTEGRATION
-var nw = 63;
-var m1 = new decimal[64,2]; 
-var m2 = new decimal[64,2]; 
-var m3 = new decimal[64,2]; 
-var m4 = new decimal[64,2]; 
-var m5 = new decimal[64,2];
-var t = new decimal[64,2];
-
 var dt_time = 0.005m;
-var timeS = 60m;
+var timeS = 600m;
 int steps = (int)(timeS / dt_time);
 int printTime = (int)(1.0m / dt_time);
-int sec = 0;
 
 //beggining T Value
-for (int i = 1; i <= nw; i++)
-{
-    t[i, 1] = 20m;
-}
+var t0 = new decimal[64,2];
+t0.Set(20m);
 
-#region calculus
-
+var solver = new CalculusSolver(domainParams,invHeatMatrix2,KSum,f,t0);
+int sec = 0;
 for (int step = 0; step <= steps; step++)
 {
-    //1 operation - (m-1*f)
-    for (int k = 1; k <= nw; k++)
-    {
-        for (int j = 1; j <= 1; j++)
-        {
-            m1[k,j] = 0;
-            for (int i = 1; i <= nw; i++)
-            {
-                m1[k,j] = m1[k,j] + (invHeatMatrix2[k,i] * f[i,j]);
-            }
-        }
-    }
-    //2 operation
-    for (int k = 1; k <= nw; k++)
-    {
-        for (int j = 1; j <= 1; j++)
-        {
-            m2[k,j] = 0;
-            for (int i = 1; i <= nw; i++)
-            {
-                m2[k,j] = m2[k,j] + (KSum[k,i] * t[i,j]);
-            }
-        }
-    }
-    //3 operation
-    for (int k = 1; k <= nw; k++)
-    {
-        for (int j = 1; j <= 1; j++)
-        {
-            m3[k,j] = 0;
-            for (int i = 1; i <= nw; i++)
-            {
-                m3[k,j] = m3[k,j] + (invHeatMatrix2[k,i] * m2[i,j]);
-            }
-        }
-    }
-    //4 operation
-    for (int k = 1; k <= nw; k++)
-    {
-        for (int j = 1; j <= 1; j++)
-        {
-            m4[k,j] = m1[k,j] - m3[k,j];
-        }
-    }
-    //5 operation
-    for (int k = 1; k <= nw; k++)
-    {
-        for (int j = 1; j <= 1; j++)
-        {
-            m5[k,j] = m4[k,j] * dt_time;
-        }
-    }
-    //6 operation
-    for (int k = 1; k <= nw; k++)
-    {
-        for (int j = 1; j <= 1; j++)
-        {
-            t[k,j] = t[k,j] + m5[k,j];
-        }
-    }
+    solver.SolveStep(dt_time);
 
-
-    if (step % printTime == 0) { 
-        
-        Console.WriteLine($"\nTime vector    -   {sec}sec   -> step {step}");
-        for (int j = 1; j <= domainParams.HorizontalElementsQuantity; j++)
-        {
-            int firstElement = j;
-            int secondElement = j + domainParams.HorizontalElementsQuantity;
-            int thirdElement = j + 2 * domainParams.HorizontalElementsQuantity;
-
-            Console.WriteLine($"{firstElement:D2}={t[firstElement, 1]:F4}\t" +
-                $"{secondElement:D2}={t[secondElement, 1]:F4}\t" +
-                $"{thirdElement:D2}={t[thirdElement, 1]:F4}\t");
-        }
+    if (step % printTime == 0) {
+        solver.PrintStep(sec, step);
         sec++;
-    }
-}
-
-#endregion calculus
-
-
-
-static void PrintMatrix<T>(T[,] matrix, int size, int from = 1)
-{
-    for (int i = from; i < size; i++)
-    {
-        for (int j = from; j < size; j++)
-        {
-            Console.Write($"\t{matrix[i, j]} ");
-        }
-        Console.WriteLine();
     }
 }

@@ -8,17 +8,15 @@
 using Accord.Math;
 using DTEngine.Entities;
 using DTEngine.Entities.ComputingDomain;
-using DTEngine.Entities.Gauss;
+using DTEngine.Entities.FVector;
+using DTEngine.Entities.FVector.FAlpha;
 using DTEngine.Helpers;
-using DTEngine.Utilities;
 
 string InputFileLocation = "C:\\Repos\\DTEngine\\InputFileFull.json";
 #if TEST_DATA
 InputFileLocation = "C:\\Repos\\DTEngine\\InputFileTest.json";
 #endif
 
-
-string OutputFileLocation = "C:\\Repos\\DTEngine\\OutputFile.json";
 
 var input = FileHandler.ReadFromFile(InputFileLocation);
 var domainParams = new ComputationalDomainParams(input);
@@ -31,20 +29,10 @@ Console.WriteLine($"Number of nodes: {domainParams.NumberOfNodes}");
 
 var nodeMap = new NodeMap(domainParams);
 
-
-///
 input.HeatSourcePower = 20 * input.Density * input.HeatCapacity;
 
-
 var stiffnessMatrix = new StiffnessMatrix(input.ConductingFactorX, domainParams, nodeMap);
-
-#if VERBOSE
-Console.WriteLine("\nLocal stiffness matrix");
-PrintMatrix(stiffnessMatrix.LocalStiffnessMatrix, 5);
-
-Console.WriteLine("\nGlobal stiffness matrix");
-PrintMatrix(stiffnessMatrix.GlobalStiffnessMatrix, domainParams.NumberOfNodes+1);
-#endif
+stiffnessMatrix.GlobalStiffnessMatrix.Dump("GLOBAL STIFFNESS MATRIX:", 1, domainParams.NumberOfNodes + 1);
 
 #region ALFA_MATRIXES
 
@@ -153,10 +141,7 @@ for (int elementId = 1; elementId <= domainParams.NumberOfElements; elementId++)
     }
 }
 
-#if VERBOSE
-Console.WriteLine("\nAlpha matrix:");
-PrintMatrix(globalAlpha, domainParams.NumberOfNodes + 1);
-#endif
+globalAlpha.Dump("ALPHA MATRIX:",1, domainParams.NumberOfNodes + 1);
 
 var KSum = new decimal[domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes + 1];
 for (int i = 1; i < domainParams.NumberOfNodes + 1; i++)
@@ -167,195 +152,50 @@ for (int i = 1; i < domainParams.NumberOfNodes + 1; i++)
     }
 }
 
-#if VERBOSE
-Console.WriteLine("\nMain Global K matrix:");
-PrintMatrix(KSum, domainParams.NumberOfNodes + 1);
-#endif
-
-var fQ = new decimal[251, 2];
-var fQElement = new decimal[5, 2];
-decimal fQValue;
-
-for (int element = 1; element <= domainParams.NumberOfElements; element++)
-{
-    var xe = new decimal[5];
-    var ye = new decimal[5];
-
-    for (int j = 1; j <= 4; j++)                                //TO REMOVE?
-    {
-        xe[j] = nodeMap.GetNodeByLocalAddress(element, j).PosX;
-        ye[j] = nodeMap.GetNodeByLocalAddress(element, j).PosY;
-    }
-
-    fQValue = ((input.HeatSourcePower) * ((xe[2] - xe[1]) * (ye[4] - ye[1]))) / 4.0m;
-    fQElement[1, 1] = fQValue * 1m; fQElement[2, 1] = fQValue * 1m;
-    fQElement[3, 1] = fQValue * 1m; fQElement[4, 1] = fQValue * 1m;
-    
-    for (int i = 1; i <= 4; i++)
-    {
-        var ii = nodeMap.GetNodeByLocalAddress(element, i).GlobalId;
-        if (ii > 0)
-            fQ[ii, 1] = fQ[ii, 1] + fQElement[i, 1];
-    }
-}
-
-#if VERBOSE
-Console.WriteLine("\nfQ vector:");
-PrintVector(fQ, 9);
-#endif
-
-//falfa
-decimal falfaValue;
-var falfa_e = new decimal[5, 2];
-var falfa = new decimal[251, 2];
+KSum.Dump("Main Global K matrix:", 1, domainParams.NumberOfNodes + 1);
 
 
-for (int element = 1; element <= domainParams.NumberOfElements; element++)
-{
-    var xe = new decimal[5];
-    var ye = new decimal[5];
+var FQFactory = new FQFactory(domainParams,nodeMap);
+var fQ = FQFactory.Generate(input.HeatSourcePower);
 
-    for (int j = 1; j <= 4; j++)                                            //to remove
-    {
-        xe[j] = nodeMap.GetNodeByLocalAddress(element, j).PosX;
-        ye[j] = nodeMap.GetNodeByLocalAddress(element, j).PosY;
-    }
+IFAlphaFactory? falphaFactory = null;
 #if TEST_DATA
-    if (element == 1 || element == 2)       //boundary conditions bottom       
-    {
-        falfaValue = ((input.HeatExchangingFactor1 * input.TemperatureBottom) * (xe[2] - xe[1])) / 2;
-        falfa_e[1, 1] = falfaValue * 1;
-        falfa_e[2, 1] = falfaValue * 1;
-        falfa_e[3, 1] = 0;
-        falfa_e[4, 1] = 0;
-    }
-    if (element == 3 || element == 4)       //other elements    TU MOŻE PROBLEM? NIE.
-    {
-        falfa_e[1, 1] = 0; falfa_e[2, 1] = 0;
-        falfa_e[3, 1] = 0; falfa_e[4, 1] = 0;
-    }
+falphaFactory = new FAlphaFactoryForTest(domainParams,nodeMap);
 #else
-    if (clipsDown.Contains(element))       //boundary conditions bottom       
-    {
-        falfaValue = ((input.HeatExchangingFactor1 * input.TemperatureBottom) * (xe[2] - xe[1])) / 2;
-        falfa_e[1, 1] = falfaValue * 1;
-        falfa_e[2, 1] = falfaValue * 1;
-        falfa_e[3, 1] = 0;
-        falfa_e[4, 1] = 0;
-    }
-    else if (clipsUp.Contains(element))       //boundary conditions top        
-    {
-        falfaValue = ((input.HeatExchangingFactor1 * input.TemperatureTop) * (xe[2] - xe[1])) / 2;
-        falfa_e[1, 1] = 0;
-        falfa_e[2, 1] = 0;
-        falfa_e[3, 1] = falfaValue * 1;
-        falfa_e[4, 1] = falfaValue * 1;
-    }
-    else if (element > 22)       //boundary conditions top        
-    {
-        falfaValue = ((input.HeatExchangingFactor2 * input.TemperatureTop) * (xe[2] - xe[1])) / 2;
-        falfa_e[1, 1] = 0;
-        falfa_e[2, 1] = 0;
-        falfa_e[3, 1] = falfaValue * 1;
-        falfa_e[4, 1] = falfaValue * 1;
-    }
-    else       //boundary conditions bottom       
-    {
-        falfaValue = ((input.HeatExchangingFactor2 * input.TemperatureBottom) * (xe[2] - xe[1])) / 2;
-        falfa_e[1, 1] = falfaValue * 1;
-        falfa_e[2, 1] = falfaValue * 1;
-        falfa_e[3, 1] = 0;
-        falfa_e[4, 1] = 0;
-    }
+falphaFactory = new FAlphaFactory(domainParams,nodeMap);
 #endif
 
-    for (int i = 1; i <= 4; i++)          //falfa building
-    {
-        var ii = nodeMap.GetNodeByLocalAddress(element, i).GlobalId;
-        if (ii > 0)
-            falfa[ii, 1] = falfa[ii, 1] + falfa_e[i, 1];
-    }
-}
+var falpha = falphaFactory.Generate(input.TemperatureTop,input.TemperatureBottom, clipsUp, clipsDown,
+    input.HeatExchangingFactor1, input.HeatExchangingFactor2);
 
-#if VERBOSE
-Console.WriteLine("\nFAlfa vector:");
-PrintVector(falfa, 9);
-#endif
+var fqFactory = new FQSmallFactory(domainParams,nodeMap);
+var fq = fqFactory.Generate(input.HeatStream);
 
-//fq
-decimal fq_value;
-var fq_e = new decimal[5, 2];
-var fq = new decimal[251, 2];
-
-
-//TO_REMOVE
-if(input.HeatStream != 0.0m)
-{
-    for (int element = 1; element <= domainParams.NumberOfElements; element++)          //to one loop
-    {
-        var xe = new decimal[5];
-        var ye = new decimal[5];
-
-        for (int j = 1; j <= 4; j++)            //to remove
-        {
-            xe[j] = nodeMap.GetNodeByLocalAddress(element, j).PosX;
-            ye[j] = nodeMap.GetNodeByLocalAddress(element, j).PosY;
-        }
-        if (element == 1 || element == 3)       //boundary conditions left     
-        {
-            fq_value = (input.HeatStream * (ye[4] - ye[1])) / 2;
-            fq_e[1, 1] = fq_value * 1;
-            fq_e[2, 1] = 0;
-            fq_e[3, 1] = 0;
-            fq_e[4, 1] = fq_value * 1;
-        }
-        if (element == 2 || element == 4)       //other elements
-        {
-            fq_e[1, 1] = 0; fq_e[2, 1] = 0;
-            fq_e[3, 1] = 0; fq_e[4, 1] = 0;
-        }
-        for (int i = 1; i <= 4; i++)          //falfa building
-        {
-            var ii = nodeMap.GetNodeByLocalAddress(element, i).GlobalId;
-            if (ii > 0)
-                fq[ii, 1] = fq[ii, 1] + fq_e[i, 1];
-        }
-    }
-}
-
-
-#if VERBOSE
-Console.WriteLine("\nfq vector:");
-PrintVector(fq, domainParams.NumberOfNodes);
-#endif
 
 // f vector
 var f = new decimal[251, 2];
 for (int i = 1; i < domainParams.NumberOfNodes + 1; i++)
 {
-    f[i, 1] = fq[i,1] + fQ[i,1] + falfa[i,1];
+    f[i, 1] = fq[i,1] + fQ[i,1] + falpha[i,1];
 }
-
-#if VERBOSE
-Console.WriteLine("\nf vector:");
-PrintVector(f, domainParams.NumberOfNodes);
-#endif
-
+f.DumpVector("F VECTOR:", 1, 1, domainParams.NumberOfNodes + 1);
 
 #if SHOULD_GAUSS
 var initialValues = new Dictionary<int, decimal> { };
 var a = new AMatrix(initialValues, KSum, f, domainParams);
 var gaussResult = GaussSolver.Solve(domainParams.NumberOfNodes, a);
-#endif
-
-#if TEST_DATA
-initialValues = new Dictionary<int, decimal> { { 3, 100m }, { 6, 100m }, { 9, 100m } };
-#endif
 
 
 #if VERBOSE
 Console.WriteLine("\nA Matrix:");
 PrintMatrixWithSizes(a, domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes, 1);
+#endif
+
+
+#endif
+
+#if TEST_DATA
+initialValues = new Dictionary<int, decimal> { { 3, 100m }, { 6, 100m }, { 9, 100m } };
 #endif
 
 
@@ -392,27 +232,14 @@ for (int i = 0; i < domainParams.NumberOfNodes; i++)
 }
 #endif
 
-var heatCapacityMatix = new HeatCapacityMatrix(input.HeatCapacity, input.Density, 0.01m, domainParams,nodeMap);
-
-#if VERBOSE
-Console.WriteLine("\nBASE HEAT CAPACITY MATRIX:");
-PrintMatrix(baseHeatCapacityMatrix, 5);
-#endif
+var heatCapacityMatixFactory = new HeatCapacityMatrixFactory(input.HeatCapacity, input.Density, domainParams, nodeMap);
 
 
-///
-var heatMatrix = heatCapacityMatix.GenerateGlobalMatrix();
-
-#if VERBOSE
-Console.WriteLine("\nHEAT CAPACITY MATRIX:");
-PrintMatrix(heatMatrix, 63, 0);
-#endif
-
+var heatMatrix = heatCapacityMatixFactory.GenerateGlobalMatrix();
 
 heatMatrix = heatMatrix.RemoveColumn(0);
 heatMatrix = heatMatrix.RemoveRow(0);
 var invHeatMatrix = heatMatrix.Inverse();
-
 
 var invHeatMatrix2 = new decimal[64, 64];
 
@@ -424,10 +251,7 @@ for (int i = 1; i < 64; i++)
     }
 }
 
-#if VERBOSE
-Console.WriteLine("\nINVERSED HEAT CAPACITY MATRIX:");
-PrintMatrix(invHeatMatrix, 63, 0);
-#endif
+invHeatMatrix2.Dump("INVERSED HEAT CAPACITY MATRIX:",1,domainParams.NumberOfNodes+1);
 
 
 // TIME INTEGRATION
@@ -440,7 +264,7 @@ var m5 = new decimal[64,2];
 var t = new decimal[64,2];
 
 var dt_time = 0.005m;
-var timeS = 5m;
+var timeS = 60m;
 int steps = (int)(timeS / dt_time);
 int printTime = (int)(1.0m / dt_time);
 int sec = 0;
@@ -547,37 +371,5 @@ static void PrintMatrix<T>(T[,] matrix, int size, int from = 1)
             Console.Write($"\t{matrix[i, j]} ");
         }
         Console.WriteLine();
-    }
-}
-
-static void PrintMatrixNew<T>(IMatrix<T> matrix, int size, int fromIndex = 1)
-{
-    for (int i = fromIndex; i < size; i++)
-    {
-        for (int j = fromIndex; j < size; j++)
-        {
-            Console.Write($"\t{matrix[i, j]} ");
-        }
-        Console.WriteLine();
-    }
-}
-
-static void PrintMatrixWithSizes<T>(IMatrix<T> matrix, int RowSize, int ColumnSize, int fromIndex = 1)
-{
-    for (int i = fromIndex; i < ColumnSize; i++)
-    {
-        for (int j = fromIndex; j < RowSize; j++)
-        {
-            Console.Write($"\t{matrix[i, j]} ");
-        }
-        Console.WriteLine();
-    }
-}
-
-static void PrintVector<T>(T[,] matrix, int size)
-{
-    for (int j = 1; j <= size; j++)
-    {
-        Console.Write($"\t{matrix[j, 1]} \n");
     }
 }

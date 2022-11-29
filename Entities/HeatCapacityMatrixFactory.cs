@@ -1,9 +1,10 @@
 ﻿using DTEngine.Entities.ComputingDomain;
+using DTEngine.Helpers;
 using System.Globalization;
 
 namespace DTEngine.Entities
 {
-    public class HeatCapacityMatrix
+    public class HeatCapacityMatrixFactory
     {
         public decimal[,] LocalHeatCapacityMatrix { get; init; } = new decimal[5, 5];
         public decimal[,] GlobalHeatCapacityMatrix { get => GetGlobalMatrix(); }
@@ -13,10 +14,12 @@ namespace DTEngine.Entities
 
         private decimal[,]? globalStiffnessMatrix;
 
-        public HeatCapacityMatrix(decimal heatCapacity, decimal density, decimal elementSize, ComputationalDomainParams domainParams, NodeMap nodeMap)
+        public HeatCapacityMatrixFactory(decimal heatCapacity, decimal density, ComputationalDomainParams domainParams, NodeMap nodeMap)
         {
             var baseHeatCapacityMatrix = new decimal[,] { { 0, 0, 0, 0, 0 }, { 0, 4, 2, 1, 2 }, { 0, 2, 4, 2, 1 }, { 0, 1, 2, 4, 2 }, { 0, 2, 1, 2, 4 } };
-            var heatCapacityFactor = heatCapacity * density * elementSize * elementSize / 36;
+            baseHeatCapacityMatrix.Dump("BASE HEAT CAPACITY MATRIX:", 1,5);
+
+             var heatCapacityFactor = heatCapacity * density * domainParams.HeightStep * domainParams.WidthStep / 36;
 
             for (int i = 0; i < 4; i++)
             {
@@ -57,7 +60,7 @@ namespace DTEngine.Entities
                 }
             }
 
-            return MGlobal;
+            return MGlobal.Dump("HEAT CAPACITY MATRIX:", 1, domainParams.NumberOfNodes + 1);
         }
     }
 }

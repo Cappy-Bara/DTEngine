@@ -1,4 +1,5 @@
 ﻿using DTEngine.Entities.ComputingDomain;
+using DTEngine.Helpers;
 
 namespace DTEngine.Entities
 {
@@ -35,6 +36,8 @@ namespace DTEngine.Entities
             LocalStiffnessMatrix[4, 2] = lambda * -2;
             LocalStiffnessMatrix[4, 3] = lambda * -1;
             LocalStiffnessMatrix[4, 4] = lambda * 4;
+
+            LocalStiffnessMatrix.Dump("LOCAL STIFFNESS MATRIX:",1,5);
 
             globalStiffnessMatrix = null;
             this.domainParams = domainParams;

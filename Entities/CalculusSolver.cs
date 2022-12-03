@@ -7,21 +7,18 @@ namespace DTEngine.Entities
         private readonly ComputationalDomainParams domainParams;
         private readonly decimal[,] invertedHeatMatrix;
         private readonly decimal[,] KSum;
-        private readonly decimal[,] f;
 
-        public CalculusSolver(ComputationalDomainParams domainParams, decimal[,] invertedHeatMatrix, decimal[,] KSum, decimal[,] f, decimal[,] t0)
+        public CalculusSolver(ComputationalDomainParams domainParams, decimal[,] invertedHeatMatrix, decimal[,] KSum, decimal[,] t0)
         {
             this.domainParams = domainParams;
             this.invertedHeatMatrix = invertedHeatMatrix;
             this.KSum = KSum;
-            this.f = f;
             Result = t0;
         }
 
         public decimal[,] Result { get; set; }
 
-
-        public void SolveStep(decimal dt)
+        public void SolveStep(decimal dt, decimal[,] f)
         {
             var m1 = new decimal[64, 2];
             var m2 = new decimal[64, 2];

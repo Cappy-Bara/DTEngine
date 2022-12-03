@@ -1,11 +1,11 @@
 ﻿//#define TEST_DATA
 #define SHOULD_GAUSS
 #define VERTICAL_GAUSS
-#define VERBOSE
 
 using Accord.Math;
 using DTEngine.Entities;
 using DTEngine.Entities.ComputingDomain;
+using DTEngine.Entities.CurrentFlow;
 using DTEngine.Entities.FVector;
 using DTEngine.Entities.FVector.FAlpha;
 using DTEngine.Entities.Gauss;
@@ -217,11 +217,24 @@ int printTime = (int)(1.0m / dt_time);
 var t0 = new decimal[64,2];
 t0.Set(20m);
 
-var solver = new CalculusSolver(domainParams,invHeatMatrix2,KSum,f,t0);
+var solver = new CalculusSolver(domainParams,invHeatMatrix2,KSum,t0);
 int sec = 0;
+
+var currentHeatSourceGenerator = new CurrentHeatSource(domainParams);
+var fiQFactory = new FiQFactory(domainParams,nodeMap);
+
 for (int step = 0; step <= steps; step++)
 {
-    solver.SolveStep(dt_time);
+    var heatSource = currentHeatSourceGenerator.GetHeatSourceValues(dt_time*step, t0);
+    var fiq = fiQFactory.Generate(heatSource);
+    var fsum = new decimal[domainParams.NumberOfNodes + 1, 2];
+
+    for (int i = 1; i <= domainParams.NumberOfNodes; i++)
+    {
+        fsum[i, 1] = f[i, 1] + fiq[i, 1];
+    }
+
+    solver.SolveStep(dt_time, fsum);
 
     if (step % printTime == 0) {
         solver.PrintStep(sec, step);

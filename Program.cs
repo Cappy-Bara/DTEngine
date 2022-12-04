@@ -225,7 +225,7 @@ var fiQFactory = new FiQFactory(domainParams,nodeMap);
 
 for (int step = 0; step <= steps; step++)
 {
-    var heatSource = currentHeatSourceGenerator.GetHeatSourceValues(dt_time*step, t0);
+    var heatSource = currentHeatSourceGenerator.GetHeatSourceValues(dt_time*step, solver.Result);
     var fiq = fiQFactory.Generate(heatSource);
     var fsum = new decimal[domainParams.NumberOfNodes + 1, 2];
 

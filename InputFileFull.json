@@ -4,7 +4,7 @@
 	"Height": 0.02,
 	"Width": 0.2,
 	"HeatExchangingFactor1": 2000.0,
-	"HeatExchangingFactor2": 20.0,
+	"HeatExchangingFactor2": 2000.0,
 	"HeatExchangingFactor3": 0.0,
 	"HeatExchangingFactor4": 0.0,
 	"ConductingFactorX": 42.0,

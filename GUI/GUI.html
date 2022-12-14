@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        * { box-sizing: border-box; }
+        div {
+            padding: 10px;
+            background-color: #8c807f;
+            color:  #e3e3f0;
+            overflow: hidden;
+        }
+        input[type=text], textarea, select {
+            width: 80px;
+            padding: 12px;
+            border: 3px solid rgb(199, 241, 9);
+            border-radius: 4px;
+        }
+        input[type=button]{ 
+            width: auto;
+            float: right;
+            cursor: pointer;
+            padding: 17px;
+        }
+
+        .container{
+            display: flex;
+            flex-direction: row;
+        }
+
+        .plot{
+            flex-grow: 8;
+        }
+
+        .plot_type{
+            width:10vw;
+        }
+
+    </style>
+</head>
+<body>
+<script  src="packages/plotly-2.16.1.min.js"></script>
+
+<div class="container">
+
+    <div class="inputs">
+   	PARAMETRY SIATKI:
+        <div>
+            <input type="text" id="meshA" value="21" />  
+             <input type="text" id="meshB" value="3" />
+        </div>
+    WYMIARY DOMENY OBLICZENIOWEJ:
+        <div>
+            <input type="text" id="cylindricalA" value="0.02" />  
+             <input type="text" id="cylindricalB" value="0.2" />
+        </div>
+    WSPÓŁCZYNNIKI WYMIANY CIEPŁA:        
+        <div>
+            <input type="text" id="heatExchanging1" value="20" />
+           <input type="text" id="heatExchanging2" value="20" />
+        </div>
+    WSPÓŁCZYNNIKI PRZEWODZENIA:
+        <div>
+            <input type="text" id="conducting1" value="42" />
+            <input type="text" id="conducting2" value="42" />
+        </div>
+    WEWNĘTRZNA MOC CIEPŁA,STRUMIEŃ CIEPŁA:
+        <div>
+            <input type="text" id="heatSourcePower" value="0" />
+            <input type="text" id="heatStream" value="0" />
+        </div>
+    TEMPERATURY (G,D,L,P):
+        <div>
+            <input type="text" id="initTempA" value="20" />  
+            <input type="text" id="initTempB" value="20" />
+            <input type="text" id="initTempC" value="20" />
+            <input type="text" id="initTempD" value="20" />
+        </div>
+	POJEMNOŚĆ CIEPLNA, GĘSTOŚĆ:        
+        <div>
+            <input type="text" id="heatCapacity" value="502" />
+            <input type="text" id="density" value="7900" />
+        </div>       
+        
+        <div>
+            <input type="button" id="bt" value="Inicjalizuj Układ" onclick="sendInitData()" />
+            <input type="button" id="bt" value="START" onclick="initSocket()" />
+            <input type="button" id="bt" value="STOP" onclick="disposeSocket()" />
+        </div>
+    </div>
+
+    <div class="plot">
+        
+        <div id="myDiv" style="width:70vw;height:80vh;"></div>
+        
+        <div>
+            <select id="chartType" class="plot_type">
+                <option selected value="heatmap">Mapa kolorow</option>
+                <option selected value="contour">Mapa konturowa</option>
+            </select>
+        </div>    
+    </div>
+</div>
+
+
+
+</body>
+
+<script>
+    async function sendInitData(){
+        const meshA = document.getElementById('meshA');
+        const meshB = document.getElementById('meshB');   
+        const cylindricalA = document.getElementById('cylindricalA');
+        const cylindricalB = document.getElementById('cylindricalB');       	  
+        const heatExchanging1 = document.getElementById('heatExchanging1');    
+        const heatExchanging2 = document.getElementById('heatExchanging2');    
+        const conducting1 = document.getElementById('conducting1');  
+        const conducting2 = document.getElementById('conducting2'); 
+        const heatSourcePower = document.getElementById('heatSourcePower');
+        const heatStream = document.getElementById('heatStream');
+        const initTempA = document.getElementById('initTempA'); 
+        const initTempB = document.getElementById('initTempB'); 
+        const initTempC = document.getElementById('initTempC'); 
+        const initTempD = document.getElementById('initTempD'); 
+        const heatCapacity = document.getElementById('heatCapacity'); 
+        const density = document.getElementById('density'); 
+        
+        var data = {
+        HorizontalNodesQuantity:parseInt(meshA.value), 
+        VerticalNodesQuantity:parseInt(meshB.value),
+        Height:parseFloat(cylindricalA.value),
+        Width:parseFloat(cylindricalB.value),
+        HeatExchangingFactor1:parseFloat(heatExchanging1.value),
+        HeatExchangingFactor2:parseFloat(heatExchanging2.value),
+        ConductingFactorX:parseFloat(heatExchanging1.value),
+        ConductingFactorY:parseFloat(heatExchanging2.value),
+        HeatSourcePower:parseFloat(heatSourcePower.value),
+        HeatStream:parseFloat(heatStream.value),
+        TemperatureTop:parseFloat(initTempA.value),
+        TemperatureBottom:parseFloat(initTempB.value),
+        TemperatureLeft:parseFloat(initTempC.value),
+        TemperatureRight:parseFloat(initTempD.value),
+        HeatCapacity:parseFloat(heatCapacity.value),
+        Density:parseFloat(density.value)}
+
+        fetch('http://localhost:50885/init', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.text())
+        .then(text => drawPlot(text))
+}
+
+</script>
+
+<script>
+    async function drawPlot(file) {
+        text = file;
+        text=text.replaceAll('/', ' ');
+        text=text.replaceAll('\n', ' ');
+        text=text.replaceAll('\t', ' ');
+        text=text.replaceAll('\r', ' ');
+        let arrayCopy = text.split(' ');
+    
+        arrayCopy = arrayCopy.filter(item => item !== "");
+    
+         let number_of_rows=1;
+            let x = [];
+    
+        let actual_row=arrayCopy[0];
+        x.push(arrayCopy[0]);
+    
+        for (let i=3;i<arrayCopy.length;i+=3)
+        {
+            if (actual_row!=arrayCopy[i])
+            {
+                actual_row=arrayCopy[i];
+                x.push(actual_row);  //indeksy osi y
+                number_of_rows++;
+            }
+        }
+    
+        var z = new Array(number_of_rows);
+        let number_of_cols=arrayCopy.length/number_of_rows/3;
+    
+        for (let i=0;i<(number_of_rows);i++)
+        {
+          z[i] = new Array(number_of_cols);
+        }
+    
+        let y = new Array(number_of_cols);
+        let zz = new Array(arrayCopy.length/3);
+    
+        let counter=0;
+        for (let i=0;i<(arrayCopy.length);i+=3)
+        {
+          zz[counter]=arrayCopy[i+2];
+          counter++;
+        }
+    
+        counter=0;
+        for (let i=0;i<(arrayCopy.length/number_of_rows);i+=3)
+        {
+          y[counter]=arrayCopy[i+1];  //indeksy osi x
+          counter++;
+        }
+    
+        for (i=0;i<number_of_rows;i++)
+        {
+            for (j=0;j<number_of_cols;j++)
+            {	
+                z[i][j]=zz[(i*number_of_cols)+j];
+            }
+        }
+    
+    const dataType = document.getElementById('chartType').value;
+    
+    var data = [ {
+            z: z,
+            x: y,
+            y: x,
+            type: dataType
+        }
+    ];
+    
+    var layout = {title: 'Pole temperatury', showlegend: false, plot_bgcolor:"#8c807f", paper_bgcolor:"#8c807f"};
+    
+    Plotly.newPlot('myDiv', data, layout);
+    }
+
+</script>
+
+<script>
+    var mySocket;
+
+    function initSocket(){
+        mySocket = new WebSocket("ws://localhost:50885/simulationHub");
+        mySocket.onopen = () => {
+            mySocket.send('{"protocol":"json","version":1}');
+        
+            data  = {
+            type:1,
+            target:"Simulate",
+            arguments: []
+        }
+
+        mySocket.send(JSON.stringify(data)+'');
+        }
+
+        mySocket.onmessage = function (event) {
+            
+            let output = event.data.slice(0, -1)
+            let data = JSON.parse(output);
+
+            if(data.target === "simulation_data"){
+                drawPlot(data.arguments[0])
+            }
+        };
+    }
+
+    function disposeSocket(){
+        mySocket.close();
+    }
+</script>
+
+
+</html>

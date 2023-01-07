@@ -28,11 +28,27 @@ namespace DTEngine.Socket
                 {
                     var data = simulationContext.GetStepData();
                     var outputData = ResultStringifier.GetString(data, simulationContext.domainParams, simulationContext.nodeMap);
+                    await Clients.All.SendAsync("simulation_data",outputData, step * dt_time);
 
-                    await Clients.All.SendAsync("simulation_data",outputData);
+                    if(step * dt_time < 3.5m)
+                        PrintPoint(step * dt_time, simulationContext.GetStepData());
                 }
+
+                if (step * dt_time == 3.5m)
+                {
+                    PrintPoint(step * dt_time, simulationContext.GetStepData());
+                }
+
                 step++;
             }
         }
+
+
+        private void PrintPoint(decimal time, decimal[,] data)
+        {
+            Console.WriteLine($"T:{time}\tP1: {data[11,1]}\tP2: {data[3, 1]}\tP3: {data[1, 1]}");
+        }
+
+
     }
 }

@@ -14,12 +14,14 @@ namespace DTEngine.Entities.CurrentFlow
         {
             var output = new decimal[domainParams.NumberOfNodes+1, 2];
 
+            var PA = 2400000m;
+
             for (int j = 1; j <= domainParams.NumberOfNodes; j++)
             {
                 var r = ResistanceApproximator.GetResistance(temperatures[j, 1]);
                 var i = Current.GetCurrentValue(time);
 
-                output[j, 1] = i * i * r;
+                output[j, 1] = i * i * r * PA;
             }
 
             return output;

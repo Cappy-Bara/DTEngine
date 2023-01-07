@@ -1,6 +1,6 @@
 ﻿//#define TEST_DATA
-#define SHOULD_GAUSS
-#define VERTICAL_GAUSS
+//#define SHOULD_GAUSS
+//#define VERTICAL_GAUSS
 
 using Accord.Math;
 using DTEngine.Contracts;
@@ -227,7 +227,7 @@ initialValues = new Dictionary<int, decimal> { { 3, 100m }, { 6, 100m }, { 9, 10
             
             //beggining T Value
             var t0 = new decimal[64, 2];
-            t0.Set(100m);
+            t0.Set(25m);
 
             solver = new CalculusSolver(domainParams, resizedInvHeatMatrix, KSum, t0);
             currentHeatSourceGenerator = new CurrentHeatSource(domainParams);

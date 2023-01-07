@@ -4,7 +4,7 @@
     {
         public static decimal GetCurrentValue(decimal time)
         {
-            return 0.0m;
+            return 1000;
         }
     }
 }

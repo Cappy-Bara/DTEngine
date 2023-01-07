@@ -55,13 +55,13 @@
         </div>
     WSPÓŁCZYNNIKI WYMIANY CIEPŁA:        
         <div>
-            <input type="text" id="heatExchanging1" value="20" />
-           <input type="text" id="heatExchanging2" value="20" />
+            <input type="text" id="heatExchanging1" value="2184" />
+           <input type="text" id="heatExchanging2" value="420" />
         </div>
     WSPÓŁCZYNNIKI PRZEWODZENIA:
         <div>
-            <input type="text" id="conducting1" value="42" />
-            <input type="text" id="conducting2" value="42" />
+            <input type="text" id="conducting1" value="19.57" />
+            <input type="text" id="conducting2" value="19.57" />
         </div>
     WEWNĘTRZNA MOC CIEPŁA,STRUMIEŃ CIEPŁA:
         <div>
@@ -70,15 +70,15 @@
         </div>
     TEMPERATURY (G,D,L,P):
         <div>
-            <input type="text" id="initTempA" value="20" />  
-            <input type="text" id="initTempB" value="20" />
-            <input type="text" id="initTempC" value="20" />
-            <input type="text" id="initTempD" value="20" />
+            <input type="text" id="initTempA" value="25" />  
+            <input type="text" id="initTempB" value="25" />
+            <input type="text" id="initTempC" value="25" />
+            <input type="text" id="initTempD" value="25" />
         </div>
 	POJEMNOŚĆ CIEPLNA, GĘSTOŚĆ:        
         <div>
-            <input type="text" id="heatCapacity" value="502" />
-            <input type="text" id="density" value="7900" />
+            <input type="text" id="heatCapacity" value="536" />
+            <input type="text" id="density" value="8045" />
         </div>       
         
         <div>
@@ -98,6 +98,12 @@
                 <option selected value="contour">Mapa konturowa</option>
             </select>
         </div>    
+
+        <div>
+                CZAS SYMULACJI:
+                <span id="simtime">0.0</span>s
+        </div>
+
     </div>
 </div>
 
@@ -131,8 +137,8 @@
         Width:parseFloat(cylindricalB.value),
         HeatExchangingFactor1:parseFloat(heatExchanging1.value),
         HeatExchangingFactor2:parseFloat(heatExchanging2.value),
-        ConductingFactorX:parseFloat(heatExchanging1.value),
-        ConductingFactorY:parseFloat(heatExchanging2.value),
+        ConductingFactorX:parseFloat(conducting1.value),
+        ConductingFactorY:parseFloat(conducting2.value),
         HeatSourcePower:parseFloat(heatSourcePower.value),
         HeatStream:parseFloat(heatStream.value),
         TemperatureTop:parseFloat(initTempA.value),
@@ -222,6 +228,8 @@
             z: z,
             x: y,
             y: x,
+            // zmin: 0,
+            // zmax: 1000,
             type: dataType
         }
     ];
@@ -252,11 +260,15 @@
 
         mySocket.onmessage = function (event) {
             
+            console.log(event)
+
             let output = event.data.slice(0, -1)
             let data = JSON.parse(output);
 
             if(data.target === "simulation_data"){
+                console.log(data)
                 drawPlot(data.arguments[0])
+                document.getElementById('simtime').innerHTML = data.arguments[1];
             }
         };
     }

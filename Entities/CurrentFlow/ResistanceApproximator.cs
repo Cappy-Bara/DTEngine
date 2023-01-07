@@ -3,41 +3,30 @@
     public static class ResistanceApproximator
     {
         private readonly static Dictionary<int, decimal> resistanceValues = new() { 
-            {25,0.14341m },
-            {80,0.17808m },
-            {120,0.20505m },
-            {200,0.26323m },
-            {300,0.34353m },
-            {420,0.44923m },
-            {520,0.5478m },
-            {600,0.62394m },
-            {700,0.73238m },
-            {720,0.77952m },
-            {820,0.98473m },
-            {880,1.01833m },
-            {900,1.02669m },
-            {1120,1.13619m },
-            {1240,1.14885m },
-            {1280,1.16112m },
-            {1400,1.19571m },
-            {1460,1.21183m },
-            {1465,1.21341m },
-            {1480,1.22334m },
-            {1483,1.2285m },
-            {1486,1.16187m},
-            {1500,1.20672m },
-            {1513,1.31337m},
-            {1520,1.31344m },
+            {0,0.000255194m },
+            {20,0.000255194m },
+            {100,0.000297929m},
+            {200,0.000342882m },
+            {300,0.00037817m },
+            {400,0.000406698m },
+            {500,0.00043034m },
+            {600,0.000450338m },
+            {700,0.000483815m },
+            {800,0.000507251m },
+            {900,0.000518337m },
+            {1000,0.000527119m },
+            {1200,0.000527119m},
         };
-        private readonly static decimal multiplier = 0.000001m;
+        //private readonly static decimal multiplier = 0.000001m;
+        private readonly static decimal multiplier = 1m;
 
         public static decimal GetResistance(decimal temperature)
         {
-            if (temperature < 25)
-                return 0.14341m* multiplier;
+            if (temperature < 0)
+                return 0.000255194m * multiplier;
 
-            if (temperature > 1520)
-                return 1.31344m* multiplier;
+            if (temperature > 1200)
+                return 0.000527119m * multiplier;
 
             int parsedTemp = (int)temperature;
             bool success = resistanceValues.TryGetValue((int)temperature, out var resistance);

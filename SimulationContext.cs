@@ -45,42 +45,10 @@ Console.WriteLine($"Number of nodes: {domainParams.NumberOfNodes}");
 
             nodeMap = new NodeMap(domainParams);
 
-            //input.HeatSourcePower = 20 * input.Density * input.HeatCapacity;
-
             var stiffnessMatrix = new StiffnessMatrix(input.ConductingFactorX, domainParams, nodeMap);
             stiffnessMatrix.GlobalStiffnessMatrix.Dump("GLOBAL STIFFNESS MATRIX:", 1, domainParams.NumberOfNodes + 1);
 
-            #region ALFA_MATRIXES
-
-            var alfa12 = new decimal[5, 5];
-            alfa12[1, 1] = 2;
-            alfa12[1, 2] = 1;
-            alfa12[2, 2] = 2;
-            alfa12[2, 1] = 1;
-            alfa12.Dump("ALFA 12:", 1, 5);
-
-            var alfa23 = new decimal[5, 5];
-            alfa23[2, 2] = 2;
-            alfa23[2, 3] = 1;
-            alfa23[3, 2] = 1;
-            alfa23[3, 3] = 2;
-            alfa23.Dump("ALFA 23:", 1, 5);
-
-            var alfa34 = new decimal[5, 5];
-            alfa34[3, 3] = 2;
-            alfa34[3, 4] = 1;
-            alfa34[4, 3] = 1;
-            alfa34[4, 4] = 2;
-            alfa34.Dump("ALFA 34:", 1, 5);
-
-            var alfa41 = new decimal[5, 5];
-            alfa41[1, 1] = 2;
-            alfa41[1, 4] = 1;
-            alfa41[4, 1] = 1;
-            alfa41[4, 4] = 2;
-            alfa41.Dump("ALFA 41:", 1, 5);
-
-            #endregion ALFA_MATRIXES
+            var alphaMatrixes = new AlphaMatixes();
 
             var globalAlpha = new decimal[domainParams.NumberOfNodes + 1, domainParams.NumberOfNodes + 1];
             var clipsDown = new int[] { 1, 2, 19, 20 };
@@ -105,25 +73,25 @@ Console.WriteLine($"Number of nodes: {domainParams.NumberOfNodes}");
                 {
                     //heat exchange - local numeration 1-2 side
                     delta = (input.HeatExchangingFactor1 * (element.Node2.PosX - element.Node1.PosX)) / 6;
-                    localAlfa = alfa12;
+                    localAlfa = alphaMatrixes.alfa12;
                 }
                 else if (clipsUp.Contains(elementId))         //boundary conditions, top short             
                 {
                     //heat exchange - local numeration 3-4 side
                     delta = (input.HeatExchangingFactor1 * (element.Node2.PosX - element.Node1.PosX)) / 6;
-                    localAlfa = alfa34;
+                    localAlfa = alphaMatrixes.alfa34;
                 }
                 else if (elementId > 22)         //boundary conditions, top long             
                 {
                     //heat exchange - local numeration 3-4 side
                     delta = (input.HeatExchangingFactor2 * (element.Node2.PosX - element.Node1.PosX)) / 6;
-                    localAlfa = alfa34;
+                    localAlfa = alphaMatrixes.alfa34;
                 }
                 else              //boundary conditions, bottom, long
                 {
                     //heat exchange - local numeration 1-2 side
                     delta = (input.HeatExchangingFactor2 * (element.Node2.PosX - element.Node1.PosX)) / 6;
-                    localAlfa = alfa12;
+                    localAlfa = alphaMatrixes.alfa12;
                 }
 #endif
 

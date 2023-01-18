@@ -63,10 +63,11 @@
             <input type="text" id="conducting1" value="19.57" />
             <input type="text" id="conducting2" value="19.57" />
         </div>
-    WEWNĘTRZNA MOC CIEPŁA,STRUMIEŃ CIEPŁA:
+    WEWN. MOC CIEPŁA,STRUMIEŃ CIEPŁA,T0:
         <div>
             <input type="text" id="heatSourcePower" value="0" />
             <input type="text" id="heatStream" value="0" />
+            <input type="text" id="begginingTemperature" value="25" />
         </div>
     TEMPERATURY (G,D,L,P):
         <div>
@@ -127,6 +128,7 @@
         const initTempB = document.getElementById('initTempB'); 
         const initTempC = document.getElementById('initTempC'); 
         const initTempD = document.getElementById('initTempD'); 
+        const begginingTemperature = document.getElementById('begginingTemperature'); 
         const heatCapacity = document.getElementById('heatCapacity'); 
         const density = document.getElementById('density'); 
         
@@ -146,7 +148,9 @@
         TemperatureLeft:parseFloat(initTempC.value),
         TemperatureRight:parseFloat(initTempD.value),
         HeatCapacity:parseFloat(heatCapacity.value),
-        Density:parseFloat(density.value)}
+        Density:parseFloat(density.value),
+        BegginingTemperature: parseFloat(begginingTemperature.value)
+        }
 
         fetch('http://localhost:50885/init', {
             method: 'POST',

@@ -34,5 +34,7 @@ namespace DTEngine.Contracts
 
         public decimal HeatCapacity { get; set; } //pojemnosc cieplna 
         public decimal Density { get; set; }      //gęstość
+
+        public decimal BegginingTemperature { get; set; } //T0
     }
 }

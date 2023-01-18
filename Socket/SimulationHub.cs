@@ -20,7 +20,8 @@ namespace DTEngine.Socket
             int printTime = (int)(1.0m / dt_time);
 
             int step = 0;
-            while(!Context.ConnectionAborted.IsCancellationRequested)
+
+            while(!Context.ConnectionAborted.IsCancellationRequested && simulationContext.isInitialized)
             {
                 simulationContext.CalculateStep(dt_time,step);
 
@@ -43,12 +44,9 @@ namespace DTEngine.Socket
             }
         }
 
-
         private void PrintPoint(decimal time, decimal[,] data)
         {
             Console.WriteLine($"T:{time}\tP1: {data[11,1]}\tP2: {data[3, 1]}\tP3: {data[1, 1]}");
         }
-
-
     }
 }

@@ -26,11 +26,12 @@ namespace DTEngine
         private decimal[,]? KSum;
 
         public bool shouldSimulate = false;
-
-
+        public bool isInitialized = false;
 
         public string Initialize(InputData input)
         {
+            isInitialized = true;
+
 #if TEST_DATA
 InputFileLocation = "C:\\Repos\\DTEngine\\InputFileTest.json";
 input = FileHandler.ReadFromFile(InputFileLocation);
@@ -195,7 +196,7 @@ initialValues = new Dictionary<int, decimal> { { 3, 100m }, { 6, 100m }, { 9, 10
             
             //beggining T Value
             var t0 = new decimal[64, 2];
-            t0.Set(25m);
+            t0.Set(input.BegginingTemperature);
 
             solver = new CalculusSolver(domainParams, resizedInvHeatMatrix, KSum, t0);
             currentHeatSourceGenerator = new CurrentHeatSource(domainParams);

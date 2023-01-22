@@ -36,5 +36,6 @@ namespace DTEngine.Contracts
         public decimal Density { get; set; }      //gęstość
 
         public decimal BegginingTemperature { get; set; } //T0
+        public decimal Current { get; set; }
     }
 }

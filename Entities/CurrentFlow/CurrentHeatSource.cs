@@ -10,7 +10,7 @@ namespace DTEngine.Entities.CurrentFlow
             this.domainParams = domainParams;
         }
 
-        public decimal[,] GetHeatSourceValues(decimal time, decimal[,] temperatures)
+        public decimal[,] GetHeatSourceValues(decimal time, decimal[,] temperatures, decimal current)
         {
             var output = new decimal[domainParams.NumberOfNodes+1, 2];
 
@@ -19,7 +19,7 @@ namespace DTEngine.Entities.CurrentFlow
             for (int j = 1; j <= domainParams.NumberOfNodes; j++)
             {
                 var r = ResistanceApproximator.GetResistance(temperatures[j, 1]);
-                var i = Current.GetCurrentValue(time);
+                var i = current;
 
                 output[j, 1] = i * i * r * PA;
             }

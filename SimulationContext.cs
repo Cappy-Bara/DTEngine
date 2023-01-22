@@ -17,6 +17,7 @@ namespace DTEngine
     public class SimulationContext
     {
         public NodeMap? nodeMap;
+        private decimal current;
         public ComputationalDomainParams? domainParams;
         private CurrentHeatSource? currentHeatSourceGenerator;
         private FiQFactory? fiQFactory;
@@ -45,6 +46,7 @@ Console.WriteLine($"Number of nodes: {domainParams.NumberOfNodes}");
 #endif
 
             nodeMap = new NodeMap(domainParams);
+            current = input.Current;
 
             var stiffnessMatrix = new StiffnessMatrix(input.ConductingFactorX, domainParams, nodeMap);
             stiffnessMatrix.GlobalStiffnessMatrix.Dump("GLOBAL STIFFNESS MATRIX:", 1, domainParams.NumberOfNodes + 1);
@@ -207,7 +209,7 @@ initialValues = new Dictionary<int, decimal> { { 3, 100m }, { 6, 100m }, { 9, 10
 
         public void CalculateStep(decimal dt_time, int step)
         {
-            var heatSource = currentHeatSourceGenerator.GetHeatSourceValues(dt_time * step, solver.Result);
+            var heatSource = currentHeatSourceGenerator.GetHeatSourceValues(dt_time * step, solver.Result, current);
             var fiq = fiQFactory.Generate(heatSource);
             var fsum = new decimal[domainParams.NumberOfNodes + 1, 2];
 

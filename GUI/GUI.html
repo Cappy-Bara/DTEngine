@@ -80,7 +80,11 @@
         <div>
             <input type="text" id="heatCapacity" value="536" />
             <input type="text" id="density" value="8045" />
-        </div>       
+        </div>
+    NATĘŻENIE PRĄDU:        
+    <div>
+        <input type="text" id="current" value="1000" />
+    </div>        
         
         <div>
             <input type="button" id="bt" value="Inicjalizuj Układ" onclick="sendInitData()" />
@@ -131,6 +135,7 @@
         const begginingTemperature = document.getElementById('begginingTemperature'); 
         const heatCapacity = document.getElementById('heatCapacity'); 
         const density = document.getElementById('density'); 
+        const current = document.getElementById('current'); 
         
         var data = {
         HorizontalNodesQuantity:parseInt(meshA.value), 
@@ -149,10 +154,11 @@
         TemperatureRight:parseFloat(initTempD.value),
         HeatCapacity:parseFloat(heatCapacity.value),
         Density:parseFloat(density.value),
-        BegginingTemperature: parseFloat(begginingTemperature.value)
+        BegginingTemperature: parseFloat(begginingTemperature.value),
+        Current: parseFloat(current.value)
         }
 
-        fetch('http://localhost:50885/init', {
+        fetch('http://localhost:5000/init', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
@@ -249,7 +255,7 @@
     var mySocket;
 
     function initSocket(){
-        mySocket = new WebSocket("ws://localhost:50885/simulationHub");
+        mySocket = new WebSocket("ws://localhost:5000/simulationHub");
         mySocket.onopen = () => {
             mySocket.send('{"protocol":"json","version":1}');
         
